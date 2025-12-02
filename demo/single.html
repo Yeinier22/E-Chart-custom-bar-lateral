@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo ECharts - Category + Value</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    .container { height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 8px 12px; font-family: system-ui, sans-serif; background: #f3f3f3; border-bottom: 1px solid #ddd; }
+    #chart { flex: 1; min-height: 300px; }
+    footer { padding: 6px 12px; font-size: 12px; color: #666; border-top: 1px solid #eee; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <strong>Demo ECharts</strong> · Caso sin Series (Category + Value)
+    </header>
+    <div id="chart"></div>
+    <footer>
+      Este demo emula el flujo sin series: una sola traza con categorías en X.
+    </footer>
+  </div>
+  <script src="./single.js"></script>
+</body>
+</html>

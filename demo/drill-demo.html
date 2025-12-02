@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Demo ECharts - Drill Down</title>
+  <style>
+    html, body { height: 100%; margin: 0; font-family: system-ui, sans-serif; }
+    .container { height: 100vh; display: flex; flex-direction: column; }
+    header { padding: 8px 12px; background: #f3f3f3; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; align-items: center; }
+    #chart { flex: 1; min-height: 300px; }
+    footer { padding: 6px 12px; font-size: 12px; color: #666; border-top: 1px solid #eee; }
+    button { padding: 4px 12px; font-size: 14px; cursor: pointer; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .info { font-size: 12px; color: #666; margin-left: 12px; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div>
+        <strong>Demo ECharts - Drill Down</strong>
+        <span class="info" id="level-info">Nivel: Principal</span>
+      </div>
+      <button id="back-btn" disabled>← Regresar</button>
+    </header>
+    <div id="chart"></div>
+    <footer>
+      Haz clic en cualquier barra para hacer drill-down. Revisa la consola (F12) para ver los datos.
+    </footer>
+  </div>
+  <script src="./drill-demo.js"></script>
+</body>
+</html>

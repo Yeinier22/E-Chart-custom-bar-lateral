@@ -1,0 +1,32 @@
+# Power BI custom visual / Node project
+# Dependencies
+node_modules/
+
+# Build artifacts
+/dist/
+/tmp/
+/.tmp/
+/.cache/
+
+# PBIVIZ packages
+*.pbiviz
+
+# Certificates and keys (dev server)
+*.pfx
+*.pem
+*.key
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Misc
+*.zip
+*.tar
+*.tgz

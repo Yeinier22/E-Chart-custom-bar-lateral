@@ -1,0 +1,545 @@
+{
+  "dataRoles": [
+    { "name": "category", "kind": "Grouping", "displayName": "Category" },
+    { "name": "series1", "kind": "Measure", "displayName": "Series 1" },
+    { "name": "series2", "kind": "Measure", "displayName": "Series 2" },
+    { "name": "series3", "kind": "Measure", "displayName": "Series 3" },
+    { "name": "series4", "kind": "Measure", "displayName": "Series 4" },
+    { "name": "series5", "kind": "Measure", "displayName": "Series 5" },
+    { "name": "labelVisibility", "kind": "Measure", "displayName": "Label Visibility (DAX)", "description": "Optional: measure that returns 1 to show label, 0 to hide" }
+  ],
+  "dataViewMappings": [
+    {
+      "categorical": {
+        "categories": {
+          "select": [
+            { "for": { "in": "category" } }
+          ],
+          "dataReductionAlgorithm": { "top": {} }
+        },
+        "values": {
+          "select": [
+            { "for": { "in": "series1" } },
+            { "for": { "in": "series2" } },
+            { "for": { "in": "series3" } },
+            { "for": { "in": "series4" } },
+            { "for": { "in": "series5" } },
+            { "for": { "in": "labelVisibility" } }
+          ],
+          "dataReductionAlgorithm": { "top": {} }
+        }
+      }
+    }
+  ],
+  "supportsHighlight": true,
+  "supportsMultiVisualSelection": true,
+  "sorting": {
+    "default": {}
+  },
+  "objects": {
+    "hoverStyle": {
+      "displayName": "Hover Style",
+      "properties": {
+        "color": {
+          "displayName": "Hover color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "opacity": {
+          "displayName": "Opacity (%)",
+          "type": { "numeric": true }
+        },
+        "fillOpacity": {
+          "displayName": "Fill Opacity (%)",
+          "type": { "numeric": true }
+        },
+        "borderOpacity": {
+          "displayName": "Border Opacity (%)",
+          "type": { "numeric": true }
+        },
+        "duration": {
+          "displayName": "Transition duration (ms)",
+          "type": { "numeric": true }
+        },
+        "easing": {
+          "displayName": "Easing",
+          "type": {
+            "enumeration": [
+              { "displayName": "Linear", "value": "linear" },
+              { "displayName": "cubicOut", "value": "cubicOut" },
+              { "displayName": "elasticOut", "value": "elasticOut" }
+            ]
+          }
+        },
+        "borderColor": {
+          "displayName": "Border Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "borderWidth": {
+          "displayName": "Border Width (px)",
+          "type": { "numeric": true }
+        },
+        "expandX": {
+          "displayName": "Horizontal Overshoot (px)",
+          "description": "Extra width on both sides of the highlighted band",
+          "type": { "numeric": true }
+        },
+        "expandY": {
+          "displayName": "Vertical Overshoot (px)",
+          "description": "Extend highlight above and below the plot area",
+          "type": { "numeric": true }
+        }
+      }
+    },
+    "dataPoint": {
+      "displayName": "Data colors",
+      "properties": {
+        "fill": {
+          "displayName": "Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        }
+      }
+    },
+    "dataLabels": {
+      "displayName": "Data Labels",
+      "properties": {
+        "show": {
+          "displayName": "Show Data Labels",
+          "type": { "bool": true }
+        },
+        "series": {
+          "displayName": "Series",
+          "type": { "enumeration": [ { "displayName": "All", "value": "all" } ] }
+        },
+        "position": {
+          "displayName": "Position",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "Inside end", "value": "insideEnd" },
+              { "displayName": "Outside end", "value": "outsideEnd" },
+              { "displayName": "Inside center", "value": "insideCenter" },
+              { "displayName": "Inside base", "value": "insideBase" }
+            ]
+          }
+        },
+        "fontFamily": {
+          "displayName": "Font Family",
+          "type": { "text": true }
+        },
+        "fontSize": {
+          "displayName": "Font Size",
+          "type": { "numeric": true }
+        },
+        "fontStyle": {
+          "displayName": "Font Style",
+          "type": {
+            "enumeration": [
+              { "displayName": "Normal", "value": "normal" },
+              { "displayName": "Bold", "value": "bold" },
+              { "displayName": "Italic", "value": "italic" }
+            ]
+          }
+        },
+        "color": {
+          "displayName": "Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "transparency": {
+          "displayName": "Transparency",
+          "type": { "numeric": true }
+        },
+        "valueType": {
+          "displayName": "Value type",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "Number", "value": "number" },
+              { "displayName": "Currency", "value": "currency" },
+              { "displayName": "Percent", "value": "percent" }
+            ]
+          }
+        },
+        "displayUnits": {
+          "displayName": "Display Units",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "None", "value": "none" },
+              { "displayName": "Thousands", "value": "thousands" },
+              { "displayName": "Millions", "value": "millions" },
+              { "displayName": "Billions", "value": "billions" },
+              { "displayName": "Trillions", "value": "trillions" }
+            ]
+          }
+        },
+        "decimals": {
+          "displayName": "Value decimal places",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "0", "value": "0" },
+              { "displayName": "1", "value": "1" },
+              { "displayName": "2", "value": "2" },
+              { "displayName": "3", "value": "3" },
+              { "displayName": "4", "value": "4" },
+              { "displayName": "5", "value": "5" },
+              { "displayName": "6", "value": "6" },
+              { "displayName": "7", "value": "7" },
+              { "displayName": "8", "value": "8" },
+              { "displayName": "9", "value": "9" }
+            ]
+          }
+        },
+        "showBlankAs": {
+          "displayName": "Show blank as",
+          "type": { "text": true }
+        },
+        "treatZeroAsBlank": {
+          "displayName": "Treat zero as blank",
+          "type": { "bool": true }
+        }
+      }
+    },
+      "drillHeader": {
+        "displayName": "Drill header",
+        "properties": {
+          "show": {
+            "displayName": "Show title",
+            "type": { "bool": true }
+          }
+        }
+      },
+    "xAxis": {
+      "displayName": "X Axis",
+      "properties": {
+        "showAxisLine": {
+          "displayName": "Show Axis Line",
+          "type": { "bool": true }
+        },
+        "showLabels": {
+          "displayName": "Show Labels",
+          "type": { "bool": true }
+        },
+        "showGridLines": {
+          "displayName": "Show Grid Lines",
+          "type": { "bool": true }
+        },
+        "labelColor": {
+          "displayName": "Label Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "labelSize": {
+          "displayName": "Label Font Size",
+          "type": { "formatting": { "fontSize": true } }
+        },
+        "rotateLabels": {
+          "displayName": "Rotate Labels (degrees)",
+          "type": { "numeric": true }
+        },
+        "fontFamily": {
+          "displayName": "Font Family",
+          "type": { "formatting": { "fontFamily": true } }
+        },
+        "fontStyle": {
+          "displayName": "Font Style",
+          "type": {
+            "enumeration": [
+              { "displayName": "Regular", "value": "regular" },
+              { "displayName": "Bold", "value": "bold" },
+              { "displayName": "Italic", "value": "italic" },
+              { "displayName": "Bold and italic", "value": "boldItalic" }
+            ]
+          }
+        }
+      }
+    },
+    "yAxis": {
+      "displayName": "Y Axis",
+      "properties": {
+        "showLabels": {
+          "displayName": "Show Labels",
+          "type": { "bool": true }
+        },
+        "showGridLines": {
+          "displayName": "Show Grid Lines",
+          "type": { "bool": true }
+        },
+        "labelColor": {
+          "displayName": "Label Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "labelSize": {
+          "displayName": "Label Font Size",
+          "type": { "formatting": { "fontSize": true } }
+        },
+        "fontFamily": {
+          "displayName": "Font Family",
+          "type": { "formatting": { "fontFamily": true } }
+        },
+        "fontStyle": {
+          "displayName": "Font Style",
+          "type": {
+            "enumeration": [
+              { "displayName": "Regular", "value": "regular" },
+              { "displayName": "Bold", "value": "bold" },
+              { "displayName": "Italic", "value": "italic" },
+              { "displayName": "Bold and italic", "value": "boldItalic" }
+            ]
+          }
+        },
+        "valueType": {
+          "displayName": "Value type",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "Number", "value": "number" },
+              { "displayName": "Currency", "value": "currency" },
+              { "displayName": "Percent", "value": "percent" }
+            ]
+          }
+        },
+        "displayUnits": {
+          "displayName": "Display Units",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "None", "value": "none" },
+              { "displayName": "Thousands", "value": "thousands" },
+              { "displayName": "Millions", "value": "millions" },
+              { "displayName": "Billions", "value": "billions" },
+              { "displayName": "Trillions", "value": "trillions" }
+            ]
+          }
+        },
+        "valueDecimals": {
+          "displayName": "Value decimal places",
+          "type": {
+            "enumeration": [
+              { "displayName": "Auto", "value": "auto" },
+              { "displayName": "0", "value": "0" },
+              { "displayName": "1", "value": "1" },
+              { "displayName": "2", "value": "2" },
+              { "displayName": "3", "value": "3" },
+              { "displayName": "4", "value": "4" },
+              { "displayName": "5", "value": "5" },
+              { "displayName": "6", "value": "6" },
+              { "displayName": "7", "value": "7" },
+              { "displayName": "8", "value": "8" },
+              { "displayName": "9", "value": "9" }
+            ]
+          }
+        },
+        "scaleAdjustmentTolerance": {
+          "displayName": "Scale Adjustment Tolerance",
+          "description": "How much empty space to leave above the maximum value. 0 means no empty space 1 means 50% empty space",
+          "type": { "numeric": true }
+        },
+        "yAxisSplits": {
+          "displayName": "Y Axis Divisions",
+          "description": "Number of gridline divisions. 0 = auto (adaptive)",
+          "type": { "numeric": true }
+        },
+        "secondaryAxisMargin": {
+          "displayName": "Secondary Axis Top Margin (%)",
+          "description": "Extra space above max value for secondary axis (0-100). Higher values make the line appear lower relative to bars.",
+          "type": { "numeric": true }
+        }
+      }
+    },
+    "legend": {
+      "displayName": "Legend",
+      "properties": {
+        "show": {
+          "displayName": "Show legend",
+          "type": { "bool": true }
+        },
+        "position": {
+          "displayName": "Position",
+          "type": {
+            "enumeration": [
+              { "displayName": "Top", "value": "top" },
+              { "displayName": "Bottom", "value": "bottom" },
+              { "displayName": "Left", "value": "left" },
+              { "displayName": "Right", "value": "right" }
+            ]
+          }
+        },
+        "alignment": {
+          "displayName": "Alignment",
+          "type": {
+            "enumeration": [
+              { "displayName": "Left", "value": "left" },
+              { "displayName": "Center", "value": "center" },
+              { "displayName": "Right", "value": "right" }
+            ]
+          }
+        },
+        "iconShape": {
+          "displayName": "Marker Shape",
+          "type": {
+            "enumeration": [
+              { "displayName": "Default", "value": "default" },
+              { "displayName": "Circle", "value": "circle" },
+              { "displayName": "Square", "value": "square" },
+              { "displayName": "Rhombus", "value": "rhombus" },
+              { "displayName": "Triangle", "value": "triangle" },
+              { "displayName": "Triangle (upside down)", "value": "triangleDown" }
+            ]
+          }
+        },
+        "markerSize": {
+          "displayName": "Marker Size",
+          "type": { "numeric": true }
+        },
+        "fontSize": {
+          "displayName": "Font Size",
+          "type": { "formatting": { "fontSize": true } }
+        },
+        "extraMargin": {
+          "displayName": "Extra Margin (%)",
+          "type": { "numeric": true }
+        },
+        "padding": {
+          "displayName": "Padding (all)",
+          "type": { "numeric": true }
+        },
+        "paddingTop": {
+          "displayName": "Top",
+          "type": { "numeric": true }
+        },
+        "paddingRight": {
+          "displayName": "Right",
+          "type": { "numeric": true }
+        },
+        "paddingBottom": {
+          "displayName": "Bottom",
+          "type": { "numeric": true }
+        },
+        "paddingLeft": {
+          "displayName": "Left",
+          "type": { "numeric": true }
+        }
+      }
+    }
+    ,
+    "selectionStyle": {
+      "displayName": "Selection Style",
+      "properties": {
+        "color": {
+          "displayName": "Fill color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "borderColor": {
+          "displayName": "Border color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "borderWidth": {
+          "displayName": "Border width",
+          "type": { "numeric": true }
+        },
+        "opacity": {
+          "displayName": "Opacity (%)",
+          "type": { "numeric": true }
+        }
+      }
+    },
+    "seriesConfig": {
+      "displayName": "Series Configuration",
+      "properties": {
+        "show": {
+          "displayName": "Show series",
+          "type": { "bool": true }
+        },
+        "chartType": {
+          "displayName": "Type",
+          "type": {
+            "enumeration": [
+              { "displayName": "Columns", "value": "bar" },
+              { "displayName": "Line", "value": "line" },
+              { "displayName": "Area", "value": "area" }
+            ]
+          }
+        },
+        "displayName": {
+          "displayName": "Display Name",
+          "type": { "text": true }
+        },
+        "widthPercent": {
+          "displayName": "Width Percent",
+          "type": { "numeric": true }
+        },
+        "valueAxis": {
+          "displayName": "Value Axis",
+          "type": {
+            "enumeration": [
+              { "displayName": "Primary", "value": "primary" },
+              { "displayName": "Secondary", "value": "secondary" }
+            ]
+          }
+        },
+        "fillColor": {
+          "displayName": "Fill Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "lineColor": {
+          "displayName": "Outline Color",
+          "type": { "fill": { "solid": { "color": true } } }
+        },
+        "lineType": {
+          "displayName": "Outline Type",
+          "type": {
+            "enumeration": [
+              { "displayName": "Solid", "value": "solid" },
+              { "displayName": "Dotted", "value": "dotted" },
+              { "displayName": "Dashed", "value": "dashed" }
+            ]
+          }
+        },
+        "lineOpacity": {
+          "displayName": "Outline Color Opacity",
+          "type": { "numeric": true }
+        },
+        "lineWidth": {
+          "displayName": "Outline Width",
+          "type": { "numeric": true }
+        },
+        "symbolSize": {
+          "displayName": "Line Width",
+          "description": "Width of the line when chart type is Line or Area",
+          "type": { "numeric": true }
+        },
+        "showSymbol": {
+          "displayName": "Show Markers",
+          "description": "Show circle markers at data points on lines",
+          "type": { "bool": true }
+        },
+        "scaleFactor": {
+          "displayName": "Scale Factor",
+          "description": "Multiplier to adjust visual scale (useful for mixed magnitude series)",
+          "type": { "numeric": true }
+        },
+        "scaleFactorMode": {
+          "displayName": "Scale Factor Mode",
+          "description": "Use same scale factor or separate for base and drill",
+          "type": {
+            "enumeration": [
+              { "displayName": "Same", "value": "same" },
+              { "displayName": "Individual", "value": "individual" }
+            ]
+          }
+        },
+        "scaleFactorBase": {
+          "displayName": "Base Scale Factor",
+          "description": "Scale factor for base view only",
+          "type": { "numeric": true }
+        },
+        "scaleFactorDrill": {
+          "displayName": "Drill Scale Factor",
+          "description": "Scale factor for drill view only",
+          "type": { "numeric": true }
+        }
+      }
+    }
+  },
+  "privileges": []
+}

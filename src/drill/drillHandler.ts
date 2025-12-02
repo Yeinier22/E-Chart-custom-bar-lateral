@@ -105,6 +105,15 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	}
 	if (nextCatOrder.length <= 1) return { categories: [], series: [] };
 
+	// Apply category limit if enabled (from formatting settings)
+	const dataOptions: any = (dv?.metadata?.objects as any)?.dataOptions || {};
+	const limitCategories: boolean = dataOptions["limitCategories"] === true;
+	const maxCategories: number = typeof dataOptions["maxCategories"] === "number" ? dataOptions["maxCategories"] : 10;
+	let finalNextCatOrder = nextCatOrder;
+	if (limitCategories && maxCategories > 0 && nextCatOrder.length > maxCategories) {
+		finalNextCatOrder = nextCatOrder.slice(0, maxCategories);
+	}
+
 	const dl: any = (dv?.metadata?.objects as any)?.dataLabels || {};
 	const dlShow: boolean = dl["show"] !== false;
 	const dlColor: string = (dl["color"] as any)?.solid?.color || "#444";
@@ -132,7 +141,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 
 	const labelVisibilityMapDrill = new Map<any, number>();
 	if (labelVisibilityValues && Array.isArray(labelVisibilityValues)) {
-		for (const c2Val of nextCatOrder) {
+		for (const c2Val of finalNextCatOrder) {
 			let sum = 0;
 			for (const i of idxs) if (nextCat[i] === c2Val) { const visVal = labelVisibilityValues[i]; sum += (visVal === null || visVal === undefined) ? 0 : Number(visVal); }
 			labelVisibilityMapDrill.set(c2Val, sum);
@@ -259,8 +268,8 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 				const measureName = col0?.source?.displayName;
 				const config = configMap.get(measureName);
 				
-				const sums = nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
-				const sumsHigh = Array.isArray(high) ? nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
+				const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
+				const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 				const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
 				seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
 			} else {
@@ -274,8 +283,8 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 					// Get config from original valuesCols
 					const config = configMap.get(measureName);
 					
-					const sums = nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
-					const sumsHigh = Array.isArray(high) ? nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
+					const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
+					const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 					const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
 					seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
 				}
@@ -292,8 +301,8 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 			// Get config
 			const config = mv?.source?.objects?.seriesConfig;
 			
-			const sums = nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
-			const sumsHigh = Array.isArray(high) ? nextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
+			const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
+			const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 			const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
 			seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
 		}
@@ -346,7 +355,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	}
 	
 	// Return assembled drill series and ordered subcategories
-	return { categories: nextCatOrder, series: seriesOut };
+	return { categories: finalNextCatOrder, series: seriesOut };
 }
 
 export interface DrillViewUIParams {

@@ -56,6 +56,13 @@ class DataLabelsCardSettings extends FormattingSettingsCard {
 
 class DrillHeaderCardSettings extends FormattingSettingsCard { show = new formattingSettings.ToggleSwitch({ name: "show", displayName: "Show title", value: true }); name: string = "drillHeader"; displayName: string = "Drill header"; slices: Array<FormattingSettingsSlice> = [this.show]; }
 
+class DataOptionsCardSettings extends FormattingSettingsCard {
+  limitCategories = new formattingSettings.ToggleSwitch({ name: "limitCategories", displayName: "Limit categories", value: false });
+  maxCategories = new formattingSettings.NumUpDown({ name: "maxCategories", displayName: "Max categories", value: 10 });
+  name: string = "dataOptions"; displayName: string = "Data Options";
+  slices: Array<FormattingSettingsSlice> = [ this.limitCategories, this.maxCategories ];
+}
+
 class XAxisCardSettings extends FormattingSettingsCard {
   showAxisLine = new formattingSettings.ToggleSwitch({ name: "showAxisLine", displayName: "Show Axis Line", value: true });
   showLabels = new formattingSettings.ToggleSwitch({ name: "showLabels", displayName: "Show Labels", value: true });
@@ -144,9 +151,10 @@ export class VisualFormattingSettingsModel extends FormattingSettingsModel {
   hoverStyleCard = new HoverStyleCardSettings();
   dataLabelsCard = new DataLabelsCardSettings();
   drillHeaderCard = new DrillHeaderCardSettings();
+  dataOptionsCard = new DataOptionsCardSettings();
   xAxisCard = new XAxisCardSettings();
   yAxisCard = new YAxisCardSettings();
   legendCard = new LegendCardSettings();
   selectionStyleCard = new SelectionStyleCardSettings();
-  cards = [ this.hoverStyleCard, this.dataLabelsCard, this.drillHeaderCard, this.xAxisCard, this.yAxisCard, this.legendCard, this.selectionStyleCard ];
+  cards = [ this.hoverStyleCard, this.dataLabelsCard, this.drillHeaderCard, this.dataOptionsCard, this.xAxisCard, this.yAxisCard, this.legendCard, this.selectionStyleCard ];
 }

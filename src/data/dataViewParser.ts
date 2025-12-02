@@ -41,6 +41,15 @@ export class DataViewParser {
       idxsByCat1.get(v)!.push(i);
     }
 
+    // Apply category limit if enabled
+    let finalUniqueCat1 = uniqueCat1;
+    if (formatting.dataOptionsCard.limitCategories.value) {
+      const maxCat = formatting.dataOptionsCard.maxCategories.value;
+      if (maxCat > 0 && uniqueCat1.length > maxCat) {
+        finalUniqueCat1 = uniqueCat1.slice(0, maxCat);
+      }
+    }
+
     const valuesCols: any = categorical.values || [];
 
     const colorHelper = new ColorHelper((this.host as any).colorPalette, {
@@ -102,13 +111,13 @@ export class DataViewParser {
       
       const src: any[] = mv?.values || [];
       const high: any[] | undefined = mv?.highlights as any[] | undefined;
-      const agg = uniqueCat1.map((c) => {
+      const agg = finalUniqueCat1.map((c) => {
         const idxs = idxsByCat1.get(c) || [];
         let s = 0; for (const i of idxs) s += toNumber(src[i]);
         return s;
       });
       const aggHigh = Array.isArray(high)
-        ? uniqueCat1.map((c) => {
+        ? finalUniqueCat1.map((c) => {
             const idxs = idxsByCat1.get(c) || [];
             let s = 0; for (const i of idxs) s += toNumber(high[i]);
             return s;
@@ -147,13 +156,13 @@ export class DataViewParser {
     }
 
     return {
-      categories: uniqueCat1,
+      categories: finalUniqueCat1,
       legendNames,
       series,
       seriesColors,
       formatting,
       dataView: dv,
-      hasData: uniqueCat1.length > 0 && series.length > 0
+      hasData: finalUniqueCat1.length > 0 && series.length > 0
     };
   }
 }

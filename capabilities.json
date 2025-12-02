@@ -209,6 +209,19 @@
           }
         }
       },
+      "dataOptions": {
+        "displayName": "Data Options",
+        "properties": {
+          "limitCategories": {
+            "displayName": "Limit categories",
+            "type": { "bool": true }
+          },
+          "maxCategories": {
+            "displayName": "Max categories",
+            "type": { "numeric": true }
+          }
+        }
+      },
     "xAxis": {
       "displayName": "X Axis",
       "properties": {

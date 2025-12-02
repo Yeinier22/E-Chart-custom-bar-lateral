@@ -69,24 +69,7 @@ export class ChartBuilder {
         data: input.legendNames
       },
       grid: { left: '3%', right: '4%', bottom: input.gridBottom, containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: input.categories,
-        axisLine: { show: input.xAxis.showAxisLine },
-        axisTick: { show: false },
-        splitLine: { show: input.xAxis.showGridLines },
-        axisLabel: {
-          show: input.xAxis.show,
-          rotate: input.xAxis.rotate,
-          fontSize: input.xAxis.labelSize,
-          color: input.xAxis.labelColor,
-          fontFamily: input.xAxis.fontFamily,
-          fontStyle: input.xAxis.fontStyle,
-          fontWeight: input.xAxis.fontWeight,
-          margin: 10
-        }
-      },
-      yAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
+      xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
         ...(typeof axis.max === 'number' ? { max: axis.max } : {}),
@@ -120,6 +103,23 @@ export class ChartBuilder {
           margin: 8
         },
         splitLine: { show: input.yAxis.showGridLines }
+      },
+      yAxis: {
+        type: 'category',
+        data: input.categories,
+        axisLine: { show: input.xAxis.showAxisLine },
+        axisTick: { show: false },
+        splitLine: { show: input.xAxis.showGridLines },
+        axisLabel: {
+          show: input.xAxis.show,
+          rotate: input.xAxis.rotate,
+          fontSize: input.xAxis.labelSize,
+          color: input.xAxis.labelColor,
+          fontFamily: input.xAxis.fontFamily,
+          fontStyle: input.xAxis.fontStyle,
+          fontWeight: input.xAxis.fontWeight,
+          margin: 10
+        }
       },
       series: input.series
     };
@@ -153,24 +153,7 @@ export class ChartBuilder {
         data: input.legendNames
       },
       grid: { left: '3%', right: '4%', bottom: input.gridBottom, containLabel: true },
-      xAxis: {
-        type: 'category',
-        data: input.categories,
-        axisLine: { show: input.xAxis.showAxisLine },
-        axisTick: { show: false },
-        splitLine: { show: input.xAxis.showGridLines },
-        axisLabel: {
-          show: input.xAxis.show,
-          rotate: input.xAxis.rotate,
-          fontSize: input.xAxis.labelSize,
-          color: input.xAxis.labelColor,
-          fontFamily: input.xAxis.fontFamily,
-          fontStyle: input.xAxis.fontStyle,
-          fontWeight: input.xAxis.fontWeight,
-          margin: 10
-        }
-      },
-      yAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
+      xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
         ...(typeof axis.max === 'number' ? { max: axis.max } : {}),
@@ -204,6 +187,23 @@ export class ChartBuilder {
           margin: 8
         },
         splitLine: { show: input.yAxis.showGridLines }
+      },
+      yAxis: {
+        type: 'category',
+        data: input.categories,
+        axisLine: { show: input.xAxis.showAxisLine },
+        axisTick: { show: false },
+        splitLine: { show: input.xAxis.showGridLines },
+        axisLabel: {
+          show: input.xAxis.show,
+          rotate: input.xAxis.rotate,
+          fontSize: input.xAxis.labelSize,
+          color: input.xAxis.labelColor,
+          fontFamily: input.xAxis.fontFamily,
+          fontStyle: input.xAxis.fontStyle,
+          fontWeight: input.xAxis.fontWeight,
+          margin: 10
+        }
       },
       series: input.series,
       animationDurationUpdate: input.animationDuration ?? 800,

@@ -741,7 +741,7 @@ export class Visual implements powerbi.extensibility.IVisual {
         data: legendNames
       },
       grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "8%" : "4%", bottom: gridBottom, containLabel: true },
-      xAxis: {
+      yAxis: {
         type: "category",
         data: categories,
         axisLine: { show: showXAxisLine },
@@ -758,7 +758,7 @@ export class Visual implements powerbi.extensibility.IVisual {
           margin: 10
         }
       },
-      yAxis: dualAxisResult.yAxis,
+      xAxis: dualAxisResult.yAxis,
       series: seriesWithHover,
     };
 
@@ -769,8 +769,8 @@ export class Visual implements powerbi.extensibility.IVisual {
   tooltip: { trigger: "axis" },
   legend: { top: "5%", data: legendNames },
   grid: { left: "3%", right: "4%", bottom: "3%", containLabel: true },
-  xAxis: { type: "category", data: categories },
-  yAxis: { type: "value", splitLine: { show: false } },
+  yAxis: { type: "category", data: categories },
+  xAxis: { type: "value", splitLine: { show: false } },
   series: seriesData
 };*/
 

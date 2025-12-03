@@ -704,6 +704,10 @@ export class Visual implements powerbi.extensibility.IVisual {
   const drillHeaderSettings: any = (dataView.metadata?.objects as any)?.drillHeader || {};
   const drillHeaderShow: boolean = drillHeaderSettings["show"] !== false;
 
+  // Data Options settings
+  const dataOptionsSettings: any = (dataView.metadata?.objects as any)?.dataOptions || {};
+  const topMargin: number = typeof dataOptionsSettings["topMargin"] === "number" ? dataOptionsSettings["topMargin"] : 10;
+
   // Compute legend placement (adapt to drill state)
   const layout = computeLegendLayout({
     show: legendShow,
@@ -744,7 +748,7 @@ export class Visual implements powerbi.extensibility.IVisual {
         ...(legendIcon ? { icon: legendIcon } : {}),
         data: legendNames
       },
-      grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "8%" : "4%", bottom: gridBottom, containLabel: true },
+      grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "8%" : "4%", top: topMargin, bottom: gridBottom, containLabel: true },
       yAxis: {
         type: "category",
         data: categories,
@@ -805,7 +809,8 @@ export class Visual implements powerbi.extensibility.IVisual {
         },
         xAxis: { showAxisLine: showXAxisLine, show: showXLabels, labelColor: xLabelColor, labelSize: xLabelSize, rotate: xRotateLabels, fontFamily: xFontFamily, fontStyle: xFontStyle, fontWeight: xFontWeight, showGridLines: showXGridLines },
   yAxis: { show: showYLabels, labelColor: yLabelColor, labelSize: yLabelSize, fontFamily: yFontFamily, fontStyle: yFontStyle, fontWeight: yFontWeight, showGridLines: showYGridLines, ...(typeof yAxisMin === 'number' ? { min: yAxisMin } : {}), ...(typeof yAxisMax === 'number' ? { max: yAxisMax } : {}), splitNumber: ySplitNumber, ...(this as any)._fixedYAxisInterval ? { interval: (this as any)._fixedYAxisInterval } : {}, labelFormatter: axisLabelFormatter },
-        gridBottom
+        gridBottom,
+        topMargin
       };
       this.chartBuilder.renderBase(baseParams);
     } else {
@@ -872,7 +877,7 @@ export class Visual implements powerbi.extensibility.IVisual {
           return;
         }
         
-  const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow };
+  const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
   renderDrillView(this, clickedCategoryLabel, true, clickedKey, uiParams);
         return;
       } else if (this.isDrilled && params && params.componentType === "series") {
@@ -919,7 +924,7 @@ export class Visual implements powerbi.extensibility.IVisual {
     });
 
     if (this.isDrilled && this.drillCategory) {
-  const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow };
+  const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
   if (!renderDrillView(this, this.drillCategory, false, this.drillCategoryKey, uiParams)) {
         // If no drill data is available anymore, restore base view
         this.restoreBaseView();

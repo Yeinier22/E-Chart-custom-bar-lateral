@@ -61,8 +61,9 @@ class DrillHeaderCardSettings extends FormattingSettingsCard { show = new format
 class DataOptionsCardSettings extends FormattingSettingsCard {
   limitCategories = new formattingSettings.ToggleSwitch({ name: "limitCategories", displayName: "Limit categories", value: false });
   maxCategories = new formattingSettings.NumUpDown({ name: "maxCategories", displayName: "Max categories", value: 10 });
+  topMargin = new formattingSettings.NumUpDown({ name: "topMargin", displayName: "Top margin (px)", value: 10 });
   name: string = "dataOptions"; displayName: string = "Data Options";
-  slices: Array<FormattingSettingsSlice> = [ this.limitCategories, this.maxCategories ];
+  slices: Array<FormattingSettingsSlice> = [ this.limitCategories, this.maxCategories, this.topMargin ];
 }
 
 class XAxisCardSettings extends FormattingSettingsCard {

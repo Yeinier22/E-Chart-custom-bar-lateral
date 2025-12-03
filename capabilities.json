@@ -224,6 +224,10 @@
           "maxCategories": {
             "displayName": "Max categories",
             "type": { "numeric": true }
+          },
+          "topMargin": {
+            "displayName": "Top margin (px)",
+            "type": { "numeric": true }
           }
         }
       },

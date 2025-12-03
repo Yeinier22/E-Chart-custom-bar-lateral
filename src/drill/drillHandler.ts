@@ -384,6 +384,7 @@ export interface DrillViewUIParams {
 	expandX: number;
 	expandY: number;
 	drillHeaderShow: boolean;
+	topMargin: number;
 }
 
 export function renderDrillView(
@@ -517,6 +518,7 @@ export function renderDrillView(
 		xAxis: { showAxisLine: true, show: true, labelColor: '#666', labelSize: 12, rotate: 0, fontFamily: 'Segoe UI, sans-serif', fontStyle: 'normal', fontWeight: 'normal', showGridLines: false },
 				yAxis: yAxisConfig,
 		gridBottom: dGridBottom,
+		topMargin: ui.topMargin,
 		animationDuration: 800,
 		animationEasing: 'cubicInOut'
 	};

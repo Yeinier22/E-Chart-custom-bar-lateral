@@ -30,6 +30,7 @@ export interface BaseRenderParams {
   xAxis: XAxisConfig;
   yAxis: YAxisConfig;
   gridBottom: string;
+  topMargin?: number;
 }
 
 export interface DrillRenderParams extends BaseRenderParams {
@@ -68,7 +69,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: '4%', bottom: input.gridBottom, containLabel: true },
+      grid: { left: '3%', right: '4%', top: input.topMargin || 10, bottom: input.gridBottom, containLabel: true },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
@@ -152,7 +153,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: '4%', bottom: input.gridBottom, containLabel: true },
+      grid: { left: '3%', right: '4%', top: input.topMargin || 10, bottom: input.gridBottom, containLabel: true },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),

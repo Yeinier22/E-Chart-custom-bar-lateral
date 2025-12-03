@@ -123,6 +123,10 @@
             ]
           }
         },
+        "distance": {
+          "displayName": "Distance from bar (px)",
+          "type": { "numeric": true }
+        },
         "fontFamily": {
           "displayName": "Font Family",
           "type": { "text": true }

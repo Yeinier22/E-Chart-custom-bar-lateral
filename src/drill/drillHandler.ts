@@ -127,6 +127,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	const dlShowBlankAs: string = (typeof dl["showBlankAs"] === "string") ? dl["showBlankAs"] : "";
 	const dlTreatZeroAsBlank: boolean = dl["treatZeroAsBlank"] === true;
 	const dlPositionSetting: string = (dl["position"] as any)?.value || dl["position"] || "auto";
+	const dlDistance: number = typeof dl["distance"] === "number" ? dl["distance"] : 5;
 	
 	// Map label position for horizontal bars
 	const mapLabelPosition = (pos: string): any => {
@@ -223,7 +224,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 			name,
 			type: chartType,
 			data: processedData,
-			label: { show: dlShow, position: dlPosition, color: dlColor, fontFamily: dlFontFamily, fontSize: dlFontSize, fontStyle: dlFontStyle, fontWeight: dlFontWeight, formatter: labelFormatterDrill, opacity: dlOpacity },
+			label: { show: dlShow, position: dlPosition, distance: dlDistance, color: dlColor, fontFamily: dlFontFamily, fontSize: dlFontSize, fontStyle: dlFontStyle, fontWeight: dlFontWeight, formatter: labelFormatterDrill, opacity: dlOpacity },
 			itemStyle: { color: fillColor },
 		};
 		

@@ -27,6 +27,7 @@ class DataLabelsCardSettings extends FormattingSettingsCard {
   show = new formattingSettings.ToggleSwitch({ name: "show", displayName: "Show Data Labels", value: false });
   series = new formattingSettings.ItemDropdown({ name: "series", displayName: "Series", items: [ { value: "all", displayName: "All" } ], value: { value: "all", displayName: "All" } });
   position = new formattingSettings.ItemDropdown({ name: "position", displayName: "Position", items: [ { value: "auto", displayName: "Auto" }, { value: "right", displayName: "Right" }, { value: "insideEnd", displayName: "Inside end" }, { value: "outsideEnd", displayName: "Outside end" }, { value: "insideCenter", displayName: "Inside center" }, { value: "insideBase", displayName: "Inside base" } ], value: { value: "auto", displayName: "Auto" } });
+  distance = new formattingSettings.NumUpDown({ name: "distance", displayName: "Distance from bar (px)", value: 5 });
   fontFamily = new formattingSettings.FontPicker({ name: "fontFamily", displayName: "Font Family", value: "Segoe UI" });
   fontSize = new formattingSettings.NumUpDown({ name: "fontSize", displayName: "Font Size", value: 12 });
   fontStyle = new formattingSettings.ItemDropdown({ name: "fontStyle", displayName: "Font Style", items: [ { value: "normal", displayName: "Normal" }, { value: "bold", displayName: "Bold" }, { value: "italic", displayName: "Italic" } ], value: { value: "normal", displayName: "Normal" } });
@@ -42,7 +43,8 @@ class DataLabelsCardSettings extends FormattingSettingsCard {
   slices: Array<FormattingSettingsSlice> = [ 
     this.show, 
     this.series, 
-    this.position, 
+    this.position,
+    this.distance, 
     this.fontFamily, 
     this.fontSize, 
     this.fontStyle, 

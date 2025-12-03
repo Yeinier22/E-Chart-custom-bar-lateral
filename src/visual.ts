@@ -296,6 +296,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   const dlShowBlankAs: string = (typeof dl["showBlankAs"] === "string") ? dl["showBlankAs"] : "";
   const dlTreatZeroAsBlank: boolean = dl["treatZeroAsBlank"] === true;
     const dlColor: string = (dl["color"] as any)?.solid?.color || "#444";
+    const dlDistance: number = typeof dl["distance"] === "number" ? dl["distance"] : 5;
     const dlFontFamily: string = (dl["fontFamily"] as string) || "Segoe UI";
     const dlFontSize: number = typeof dl["fontSize"] === "number" ? dl["fontSize"] : 12;
     const dlFontStyleSetting: string = (dl["fontStyle"] as string) || "normal"; // normal|bold|italic
@@ -530,6 +531,7 @@ export class Visual implements powerbi.extensibility.IVisual {
       ...(s.label || {}),
       show: dlShow,
       position: dlPosition,
+      distance: dlDistance,
       color: dlColor,
       fontFamily: dlFontFamily,
       fontSize: dlFontSize,

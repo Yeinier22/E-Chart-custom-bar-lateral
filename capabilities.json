@@ -115,6 +115,7 @@
           "type": {
             "enumeration": [
               { "displayName": "Auto", "value": "auto" },
+              { "displayName": "Right", "value": "right" },
               { "displayName": "Inside end", "value": "insideEnd" },
               { "displayName": "Outside end", "value": "outsideEnd" },
               { "displayName": "Inside center", "value": "insideCenter" },

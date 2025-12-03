@@ -896,7 +896,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   renderDrillView(this, clickedCategoryLabel, true, clickedKey, uiParams);
         return;
       } else if (this.isDrilled && params && params.componentType === "series") {
-        // Drill level: apply persistent selection band over clicked category
+        // Drill level: check if we can drill deeper or just select
         const name = params.name;
         const cats = this.currentCategories || [];
         const idx = cats.indexOf(name);
@@ -915,6 +915,14 @@ export class Visual implements powerbi.extensibility.IVisual {
             }).catch((error) => {
               console.error("Drill selection failed:", error);
             });
+          }
+          
+          // Check if we can drill down to the next level from here
+          if (this.canCategoryDrillDown(name, name)) {
+            // Drill to next level
+            const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
+            renderDrillView(this, name, true, name, uiParams);
+            return;
           }
 
           // Toggle visual selection if same index clicked

@@ -673,18 +673,28 @@ export function restoreBaseView(visual: any) {
 	console.log("baseParams to render:", baseParams);
 	
 	// Reset drill state - go back one level
-	visual.isDrilled = visual.drillLevel > 1; // Still drilled if more than one level deep
 	visual.drillLevel = Math.max(0, (visual.drillLevel || 0) - 1); // Decrease drill level
 	if (visual.drillPath && visual.drillPath.length > 0) {
 		visual.drillPath.pop(); // Remove last drilled category
 	}
+	
+	// Only clear drill category if back to base level
 	if (visual.drillLevel === 0) {
 		visual.drillPath = []; // Clear path when back to base
 		visual.drillCategory = null;
 		visual.drillCategoryKey = null;
+		visual.isDrilled = false;
+	} else {
+		// Still drilled, keep previous level's category
+		visual.isDrilled = true;
+		// Restore previous level's category from path if available
+		if (visual.drillPath && visual.drillPath.length > 0) {
+			const prevCategory = visual.drillPath[visual.drillPath.length - 1];
+			visual.drillCategory = prevCategory;
+			visual.drillCategoryKey = prevCategory;
+		}
 	}
-	visual.drillCategory = null;
-	visual.drillCategoryKey = null;
+	
 	visual.hoverGraphic = [];
 	visual.selectedIndex = null;
 	visual.selectionGraphic = [];

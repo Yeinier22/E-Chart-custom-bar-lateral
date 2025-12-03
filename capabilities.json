@@ -6,7 +6,7 @@
     { "name": "series3", "kind": "Measure", "displayName": "Series 3" },
     { "name": "series4", "kind": "Measure", "displayName": "Series 4" },
     { "name": "series5", "kind": "Measure", "displayName": "Series 5" },
-    { "name": "labelVisibility", "kind": "Measure", "displayName": "Label Visibility (DAX)", "description": "Optional: measure that returns 1 to show label, 0 to hide" }
+    { "name": "labelVisibility", "kind": "Measure", "displayName": "Label Visibility (DAX)", "description": "Optional: measure that returns 1 to show label, 0 to hide", "displayNameKey": "Visual_LabelVisibility", "preferredTypes": [ { "numeric": true } ] }
   ],
   "dataViewMappings": [
     {

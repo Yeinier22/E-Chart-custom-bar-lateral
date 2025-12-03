@@ -48,6 +48,7 @@ import "./../style/visual.less";
 import { formatAxisValue } from "./utils/formatUtils";
 import { computeYAxisScale } from "./axes/yAxisScale";
 import { createDualAxisConfig, computeSecondaryAxisScale, AxisConfiguration } from "./axes/dualAxisManager";
+import { DebugLogger } from "./utils/debugLogger";
 
 // Ensure solid color (no alpha). If input has rgba/argb/hex with alpha, drop alpha.
 // Deprecated local function replaced by ensureSolidColor in utils/colorUtils.ts
@@ -64,6 +65,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   private parsed: ParsedData | undefined;
   private seriesColors: { [key: string]: string } = {};
   private dataView: powerbi.DataView | undefined;
+  private debugLogger: DebugLogger;
   // Selection tracking
   private selectionIds: ISelectionId[] = [];
   private categorySelectionIds: { [key: string]: ISelectionId[] } = {};
@@ -220,7 +222,8 @@ export class Visual implements powerbi.extensibility.IVisual {
     this.host = options.host;
     this.selectionManager = options.host.createSelectionManager();
     this.formattingSettingsService = new FormattingSettingsService();
-    this.parser = new DataViewParser(this.host, (ctor, dv) => this.formattingSettingsService.populateFormattingSettingsModel(ctor, dv));
+    this.debugLogger = new DebugLogger(options.element);
+    this.parser = new DataViewParser(this.host, (ctor, dv) => this.formattingSettingsService.populateFormattingSettingsModel(ctor, dv), this.debugLogger);
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
@@ -384,18 +387,30 @@ export class Visual implements powerbi.extensibility.IVisual {
     
     // Filter only series1-series5 measures, skip labelVisibility
     const measures: any[] = (valuesCols as any[]) || [];
+    
     const seriesMeasures = measures.filter((mv: any) => {
       const roles = mv?.source?.roles;
       if (!roles) return false;
       return roles.series1 || roles.series2 || roles.series3 || roles.series4 || roles.series5;
     });
     
+    // Remove duplicates by measure name (for Field Parameters)
+    const seenNames = new Set<string>();
+    const uniqueSeriesMeasures = seriesMeasures.filter((mv: any) => {
+      const name = mv?.source?.displayName ?? '';
+      if (seenNames.has(name)) {
+        return false; // Skip duplicate
+      }
+      seenNames.add(name);
+      return true;
+    });
+    
     seriesData = seriesData.map((s: any, idx: number) => {
       let config: any = {};
       
       // Read configuration from the measure
-      if (seriesMeasures[idx]) {
-        config = seriesMeasures[idx]?.source?.objects?.seriesConfig || {};
+      if (uniqueSeriesMeasures[idx]) {
+        config = uniqueSeriesMeasures[idx]?.source?.objects?.seriesConfig || {};
       }
       
       // Get chart type from configuration (default to 'bar')

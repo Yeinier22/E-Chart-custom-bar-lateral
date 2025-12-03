@@ -361,13 +361,15 @@ export class Visual implements powerbi.extensibility.IVisual {
     };
 
     const mapLabelPosition = (pos: string): any => {
+      // For horizontal bars, positions are different than vertical bars
       switch (pos) {
-        case "insideEnd": return "insideTop"; // near end inside (vertical bars)
-        case "outsideEnd": return "top";     // outside end
-        case "insideCenter": return "inside";
-        case "insideBase": return "insideBottom";
+        case "right": return "right";          // outside right (end of bar)
+        case "insideEnd": return "insideRight"; // inside at the right end
+        case "outsideEnd": return "right";      // outside at the right end
+        case "insideCenter": return "inside";   // center of bar
+        case "insideBase": return "insideLeft"; // inside at left (base)
         case "auto":
-        default: return "top";
+        default: return "right";                // default to right for horizontal bars
       }
     };
     const dlPosition = mapLabelPosition(dlPositionSetting);

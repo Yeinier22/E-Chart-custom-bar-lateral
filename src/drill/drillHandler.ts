@@ -126,6 +126,21 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	const dlOpacity: number = Math.max(0, Math.min(1, 1 - (dlTransparency / 100)));
 	const dlShowBlankAs: string = (typeof dl["showBlankAs"] === "string") ? dl["showBlankAs"] : "";
 	const dlTreatZeroAsBlank: boolean = dl["treatZeroAsBlank"] === true;
+	const dlPositionSetting: string = (dl["position"] as any)?.value || dl["position"] || "auto";
+	
+	// Map label position for horizontal bars
+	const mapLabelPosition = (pos: string): any => {
+		switch (pos) {
+			case "right": return "right";
+			case "insideEnd": return "insideRight";
+			case "outsideEnd": return "right";
+			case "insideCenter": return "inside";
+			case "insideBase": return "insideLeft";
+			case "auto":
+			default: return "right";
+		}
+	};
+	const dlPosition = mapLabelPosition(dlPositionSetting);
 	
 	// Data Labels value formatting
 	// Read dropdown values - they can come as objects {value: "...", displayName: "..."} or strings
@@ -208,7 +223,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 			name,
 			type: chartType,
 			data: processedData,
-			label: { show: dlShow, position: "top", color: dlColor, fontFamily: dlFontFamily, fontSize: dlFontSize, fontStyle: dlFontStyle, fontWeight: dlFontWeight, formatter: labelFormatterDrill, opacity: dlOpacity },
+			label: { show: dlShow, position: dlPosition, color: dlColor, fontFamily: dlFontFamily, fontSize: dlFontSize, fontStyle: dlFontStyle, fontWeight: dlFontWeight, formatter: labelFormatterDrill, opacity: dlOpacity },
 			itemStyle: { color: fillColor },
 		};
 		

@@ -1,7 +1,7 @@
 // Drill handler module: encapsulates drilldown logic and callbacks
 // Assumes visual object carries chartInstance, parsed data, and state flags.
 
-import { updateDrillGraphics } from "../interaction/hoverHandlers";
+import { updateDrillGraphics, bindHoverHandlers } from "../interaction/hoverHandlers";
 import { buildDrillSelectionIds } from "../interaction/selectionManager";
 import { computeYAxisScale } from "../axes/yAxisScale";
 import { computeLegendLayout } from "../layout/legendLayout";
@@ -718,6 +718,8 @@ export function renderDrillView(
 		visual.selectionGraphic = [];
 	}
 	(visual.chartInstance as any).setOption({ graphic: [] }, { replaceMerge: ["graphic"] });
+	// Re-bind hover handlers after drill render
+	bindHoverHandlers(visual);
 		// Redraw drill-level back/reset overlays; selection band is handled elsewhere
 		updateDrillGraphics(visual);
 	return true;
@@ -886,7 +888,9 @@ export function restoreBaseView(visual: any) {
 		// Fallback to renderBase if lastUpdateOptions not available
 		visual.chartBuilder.renderBase(baseParams);
 		visual.currentCategories = Array.isArray(visual.baseCategories) ? [...visual.baseCategories] : [];
-		(visual.chartInstance as any).setOption({ graphic: [] }, { replaceMerge: ["graphic"] });
+		visual.chartInstance.setOption({ graphic: [] }, { replaceMerge: ["graphic"] });
+		// Re-bind hover handlers after restoring base view
+		bindHoverHandlers(visual);
 		updateDrillGraphics(visual);
 	}
 }

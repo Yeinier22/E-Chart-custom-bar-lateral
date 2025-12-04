@@ -230,6 +230,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
+    this.debugLogger.log(`🔄 UPDATE CALLED type=${options.type} editMode=${options.editMode}`);
     const dataView = options.dataViews && options.dataViews[0];
     this.dataView = dataView;
     this.lastUpdateOptions = options; // Store for potential re-render on external selection changes
@@ -869,6 +870,7 @@ export class Visual implements powerbi.extensibility.IVisual {
     }
 
     // Bind hover handlers via external interaction module
+    this.debugLogger.log("📍 CALLING bindHoverHandlers from visual.ts update()");
     bindHoverHandlers(this);
 
     // Drill rendering extracted to drillHandler.renderDrillView

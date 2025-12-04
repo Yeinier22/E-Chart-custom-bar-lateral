@@ -12,41 +12,44 @@ export function computeBandRect(
 ): BandRect | null {
   if (!ec || !Array.isArray(categories) || index < 0 || index >= categories.length) return null;
   try {
-    const centerPx = (ec as any).convertToPixel({ xAxisIndex: 0 }, categories[index]);
-    const leftCenter = index > 0 ? (ec as any).convertToPixel({ xAxisIndex: 0 }, categories[index - 1]) : undefined;
-    const rightCenter = index < categories.length - 1 ? (ec as any).convertToPixel({ xAxisIndex: 0 }, categories[index + 1]) : undefined;
+    // For horizontal bar charts, categories are on Y axis
+    const centerPx = (ec as any).convertToPixel({ yAxisIndex: 0 }, categories[index]);
+    const topCenter = index > 0 ? (ec as any).convertToPixel({ yAxisIndex: 0 }, categories[index - 1]) : undefined;
+    const bottomCenter = index < categories.length - 1 ? (ec as any).convertToPixel({ yAxisIndex: 0 }, categories[index + 1]) : undefined;
     let halfStep = 0;
-    if (leftCenter !== undefined && rightCenter !== undefined) {
-      halfStep = Math.min(Math.abs(centerPx - leftCenter), Math.abs(rightCenter - centerPx)) / 2;
-    } else if (rightCenter !== undefined) {
-      halfStep = Math.abs(rightCenter - centerPx) / 2;
-    } else if (leftCenter !== undefined) {
-      halfStep = Math.abs(centerPx - leftCenter) / 2;
+    if (topCenter !== undefined && bottomCenter !== undefined) {
+      halfStep = Math.min(Math.abs(centerPx - topCenter), Math.abs(bottomCenter - centerPx)) / 2;
+    } else if (bottomCenter !== undefined) {
+      halfStep = Math.abs(bottomCenter - centerPx) / 2;
+    } else if (topCenter !== undefined) {
+      halfStep = Math.abs(centerPx - topCenter) / 2;
     } else {
       try {
-        const xAxisModel = (ec as any).getModel().getComponent('xAxis', 0);
-        const axis = xAxisModel?.axis;
+        const yAxisModel = (ec as any).getModel().getComponent('yAxis', 0);
+        const axis = yAxisModel?.axis;
         const bw = axis?.getBandWidth ? axis.getBandWidth() : 40;
-        const testRight = (ec as any).convertToPixel({ xAxisIndex: 0 }, categories[index]);
-        const testLeft = testRight - (bw || 40);
-        halfStep = Math.abs(testRight - testLeft) / 2;
+        const testBottom = (ec as any).convertToPixel({ yAxisIndex: 0 }, categories[index]);
+        const testTop = testBottom - (bw || 40);
+        halfStep = Math.abs(testBottom - testTop) / 2;
       } catch { halfStep = 20; }
     }
 
     const coord0 = centerPx - halfStep;
     const coord1 = centerPx + halfStep;
     const grid = (ec as any).getModel().getComponent('grid', 0);
-    let topPx = 0, bottomPx = 0;
+    let leftPx = 0, rightPx = 0;
     try {
       const rect = grid?.coordinateSystem?.getRect();
-      topPx = rect?.y ?? 0; bottomPx = (rect?.y ?? 0) + (rect?.height ?? 0);
+      leftPx = rect?.x ?? 0; 
+      rightPx = (rect?.x ?? 0) + (rect?.width ?? 0);
     } catch {}
-    const leftPx = Math.min(coord0, coord1) - expandX;
-    const rightPx = Math.max(coord0, coord1) + expandX;
-    const width = Math.max(0, rightPx - leftPx);
-    const height = Math.max(0, (bottomPx - topPx) + expandY);
-    const rectX = leftPx;
-    const rectY = topPx - expandY;
+    // For horizontal bars: coord0/coord1 are Y coordinates (top/bottom of band)
+    const topPx = Math.min(coord0, coord1) - expandY;
+    const bottomPx = Math.max(coord0, coord1) + expandY;
+    const width = Math.max(0, (rightPx - leftPx) + expandX);
+    const height = Math.max(0, bottomPx - topPx);
+    const rectX = leftPx - expandX;
+    const rectY = topPx;
     return { x: rectX, y: rectY, width, height };
   } catch {
     return null;

@@ -102,6 +102,8 @@ export function drawSelectionBand(
 }
 
 export function bindHoverHandlers(visual: any) {
+  visual.debugLogger?.log(`🔧 BIND HOVER HANDLERS chartInstance=${!!visual.chartInstance} dataView=${!!visual.dataView} isDrilled=${visual.isDrilled}`);
+  
   const objects: any = visual.dataView?.metadata?.objects || {};
   const hoverObj: any = objects?.hoverStyle || {};
   const hoverColor: string = hoverObj?.color?.solid?.color || "#66aaff";
@@ -114,6 +116,8 @@ export function bindHoverHandlers(visual: any) {
   const hoverBorderWidth: number = typeof hoverObj?.borderWidth === "number" ? hoverObj.borderWidth : 0;
   const expandX: number = typeof hoverObj?.expandX === "number" ? hoverObj.expandX : 8;
   const expandY: number = typeof hoverObj?.expandY === "number" ? hoverObj.expandY : 8;
+
+  visual.debugLogger?.log(`🎨 HOVER SETTINGS color=${hoverColor} fillOp=${fillOpacity} strokeOp=${strokeOpacity} borderColor=${hoverBorderColor} borderW=${hoverBorderWidth}`);
 
   let currentHoverIndex: number | null = null;
   const updateHoverBand = (xIndex: number | null) => {
@@ -128,6 +132,7 @@ export function bindHoverHandlers(visual: any) {
     if (!rect) { visual.hoverGraphic = []; updateDrillGraphics(visual); return; }
     const solidFill = ensureSolidColor(hoverColor);
     const solidStroke = ensureSolidColor(hoverBorderColor);
+    visual.debugLogger?.log(`✨ HOVER ACTIVE idx=${xIndex} fill=${solidFill} stroke=${solidStroke} fillOp=${fillOpacity}`);
     visual.hoverGraphic = [{
       type: 'rect', id: 'hoverBand', z: 5,
       shape: { x: rect.x, y: rect.y, width: rect.width, height: rect.height, r: 4 },
@@ -143,13 +148,14 @@ export function bindHoverHandlers(visual: any) {
     const ec: any = visual.chartInstance as any;
     const inGrid = ec.containPixel({ gridIndex: 0 }, [e.offsetX, e.offsetY]);
     if (!inGrid) { if (currentHoverIndex !== null) { currentHoverIndex = null; updateHoverBand(null); } return; }
+    // For horizontal bars, categories are on Y axis (index 1 in the returned array)
     const val = ec.convertFromPixel({ gridIndex: 0 }, [e.offsetX, e.offsetY]);
     if (!Array.isArray(val)) return;
-    const xVal = val[0];
+    const yVal = val[1]; // Y value for horizontal bar chart
     const cats = visual.currentCategories || [];
     let xi: number = -1;
-    if (typeof xVal === 'number' && Number.isFinite(xVal)) xi = Math.round(xVal);
-    else xi = cats.indexOf(xVal);
+    if (typeof yVal === 'number' && Number.isFinite(yVal)) xi = Math.round(yVal);
+    else xi = cats.indexOf(yVal);
     if (xi >= 0 && xi < cats.length) {
       if (xi !== currentHoverIndex) { currentHoverIndex = xi; updateHoverBand(xi); }
     }

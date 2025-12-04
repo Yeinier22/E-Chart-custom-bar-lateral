@@ -12,7 +12,30 @@ export function updateDrillGraphics(visual: any) {
       invisible: !visual.isDrilled,
       style: { text: "↩ Back", font: "bold 14px Segoe UI", fill: "#555" },
       cursor: "pointer",
-  onclick: () => visual.restoreBaseView && visual.restoreBaseView(),
+  onclick: () => {
+    if (visual.drillBack) {
+      // Create ui params from current visual state - read actual settings from visual
+      const dataView = visual.dataView;
+      const objects = dataView?.metadata?.objects;
+      const drillHeaderSettings = objects?.drillHeader || {};
+      const drillHeaderShow = drillHeaderSettings["show"] !== false;
+      const topMarginSettings = objects?.dataOptions || {};
+      const topMargin = typeof topMarginSettings["topMargin"] === "number" ? topMarginSettings["topMargin"] : 10;
+      
+      const hoverDuration = 200;
+      const hoverEasing = "cubicOut";
+      const selColor = "#ffcc00";
+      const selBorderColor = "#ff6600";
+      const selBorderWidth = 2;
+      const selOpacity = 0.3;
+      const expandX = 8;
+      const expandY = 8;
+      const ui = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
+      visual.drillBack(ui);
+    } else if (visual.restoreBaseView) {
+      visual.restoreBaseView();
+    }
+  },
     },
     {
       type: "text",

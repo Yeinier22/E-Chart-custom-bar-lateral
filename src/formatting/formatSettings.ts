@@ -56,7 +56,7 @@ class DataLabelsCardSettings extends FormattingSettingsCard {
   ];
 }
 
-class DrillHeaderCardSettings extends FormattingSettingsCard { show = new formattingSettings.ToggleSwitch({ name: "show", displayName: "Show title", value: true }); name: string = "drillHeader"; displayName: string = "Drill header"; slices: Array<FormattingSettingsSlice> = [this.show]; }
+class DrillHeaderCardSettings extends FormattingSettingsCard { show = new formattingSettings.ToggleSwitch({ name: "show", displayName: "Show title", value: false }); name: string = "drillHeader"; displayName: string = "Drill header"; slices: Array<FormattingSettingsSlice> = [this.show]; }
 
 class DataOptionsCardSettings extends FormattingSettingsCard {
   limitCategories = new formattingSettings.ToggleSwitch({ name: "limitCategories", displayName: "Limit categories", value: false });

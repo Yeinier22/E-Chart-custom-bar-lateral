@@ -31,7 +31,7 @@ import { FormattingSettingsService } from "powerbi-visuals-utils-formattingmodel
 import { VisualFormattingSettingsModel } from "./formatting";
 import { bindHoverHandlers, drawSelectionBand, updateDrillGraphics } from "./interaction/hoverHandlers";
 import { buildSelectionIds } from "./interaction/selectionManager";
-import { canDrillDown, canCategoryDrillDown, buildDrillForCategory as buildDrillForCategoryExternal, restoreBaseView as restoreBaseViewExternal, resetFullView as resetFullViewExternal, renderDrillView } from "./drill/drillHandler";
+import { canDrillDown, canCategoryDrillDown, buildDrillForCategory as buildDrillForCategoryExternal, restoreBaseView as restoreBaseViewExternal, resetFullView as resetFullViewExternal, renderDrillView, drillBack as drillBackExternal } from "./drill/drillHandler";
 import { DataViewParser } from "./data/dataViewParser";
 import { ParsedData } from "./data/dataInterfaces";
 import { ensureSolidColor } from "./utils/colorUtils";
@@ -93,6 +93,9 @@ export class Visual implements powerbi.extensibility.IVisual {
 
   // Reset equals restore for 2-level drill
   private resetFullView() { return resetFullViewExternal(this); }
+
+  // Drill back one level
+  private drillBack(ui: any) { return drillBackExternal(this, ui); }
 
   // Check if drill down is possible
   private canDrillDown(): boolean { return canDrillDown(this); }

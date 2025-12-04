@@ -891,6 +891,36 @@ export function restoreBaseView(visual: any) {
 	}
 }
 
+export function drillBack(visual: any, ui: DrillViewUIParams): void {
+	if (!visual.isDrilled || visual.drillLevel <= 1) {
+		// At level 1 or base, go back to base view
+		restoreBaseView(visual);
+		return;
+	}
+	
+	// At level 2 or higher, go back one level
+	// First, remove current level from path
+	if (visual.drillPath && visual.drillPath.length > 0) {
+		visual.drillPath.pop();
+	}
+	
+	// Decrement the level by 2 (because renderDrillView will increment it by 1)
+	visual.drillLevel -= 2;
+	
+	// Get the category for the previous level
+	const previousCategory = visual.drillPath && visual.drillPath.length > 0 
+		? visual.drillPath[visual.drillPath.length - 1] 
+		: null;
+	
+	if (previousCategory) {
+		// Re-render the previous drill level (this will increment drillLevel by 1)
+		renderDrillView(visual, previousCategory, true, previousCategory, ui);
+	} else {
+		// Fallback to base view
+		restoreBaseView(visual);
+	}
+}
+
 export function resetFullView(visual: any) {
 	// Reset to base level completely
 	visual.drillLevel = 0;
@@ -902,5 +932,7 @@ export function resetFullView(visual: any) {
 	visual.selectionGraphic = [];
 	restoreBaseView(visual);
 }
+
+
 
 

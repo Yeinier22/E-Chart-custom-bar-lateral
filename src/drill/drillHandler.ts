@@ -114,6 +114,75 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 		finalNextCatOrder = nextCatOrder.slice(0, maxCategories);
 	}
 
+	// INTERNAL SORTING FOR DRILL LEVELS
+	// Detect sortInfo from categorical values at current drill level
+	let sortInfo: number | undefined = undefined;
+	const categoryAggregates = new Map<any, number>();
+	
+	// Build aggregates for each category in this drill level
+	for (const cat of finalNextCatOrder) {
+		let sum = 0;
+		for (const i of idxs) {
+			if (nextCat[i] === cat) {
+				// Aggregate first measure value for sorting
+				const firstMeasure = valuesCols?.[0];
+				if (firstMeasure && Array.isArray(firstMeasure.values)) {
+					const val = firstMeasure.values[i];
+					sum += (typeof val === 'number' && !isNaN(val)) ? val : 0;
+				}
+			}
+		}
+		categoryAggregates.set(cat, sum);
+	}
+	
+	// Detect sort direction from first measure
+	const firstMeasure = valuesCols?.[0];
+	if (firstMeasure && (firstMeasure as any).source?.sort) {
+		sortInfo = (firstMeasure as any).source.sort;
+	}
+	
+	// Apply internal sorting if sort is detected
+	// SortDirection: 1 = ascending, 2 = descending
+	if (sortInfo === 1 || sortInfo === 2) {
+		const isAscending = sortInfo === 1;
+		
+		// Create array of {category, value, index} for sorting
+		const categoryData = finalNextCatOrder.map((cat, index) => ({
+			category: cat,
+			value: categoryAggregates.get(cat) || 0,
+			originalIndex: index
+		}));
+		
+		// Sort by value
+		categoryData.sort((a, b) => {
+			return isAscending ? (a.value - b.value) : (b.value - a.value);
+		});
+		
+		// Extract sorted categories
+		const sortedCategories = categoryData.map(item => item.category);
+		
+		// Create index mapping for reordering series data later
+		const sortOrderMap = new Map<any, number>();
+		sortedCategories.forEach((cat, newIndex) => {
+			sortOrderMap.set(cat, newIndex);
+		});
+		
+		// Update finalNextCatOrder to sorted order
+		finalNextCatOrder = sortedCategories;
+		
+		// Log sort application
+		if (visual.debugLogger) {
+			visual.debugLogger.log('Drill Sort Applied', {
+				level: drillLevel + 1,
+				sortInfo,
+				direction: isAscending ? 'ascending' : 'descending',
+				categoryCount: finalNextCatOrder.length,
+				sampleCategories: finalNextCatOrder.slice(0, 5),
+				sampleValues: finalNextCatOrder.slice(0, 5).map(cat => categoryAggregates.get(cat))
+			});
+		}
+	}
+
 	const dl: any = (dv?.metadata?.objects as any)?.dataLabels || {};
 	const dlShow: boolean = dl["show"] !== false;
 	const dlColor: string = (dl["color"] as any)?.solid?.color || "#444";
@@ -149,6 +218,29 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	const dlDisplayUnits: string = (dl["displayUnits"] as any)?.value || dl["displayUnits"] || 'auto';
 	const dlDecimals: string = (dl["decimals"] as any)?.value || dl["decimals"] || 'auto';
 
+	// Build format map by series name
+	const seriesFormatMap = new Map<string, string>();
+	for (let i = 0; i < valuesCols.length; i++) {
+		const col = valuesCols[i];
+		const name = col?.source?.displayName;
+		const format = col?.source?.format;
+		if (name && format) {
+			seriesFormatMap.set(name, format);
+			console.log('[Drill] Format for series', name, ':', format);
+		}
+	}
+	
+	// Log to visual debugger if available
+	if (visual.debugLogger) {
+		visual.debugLogger.log('Drill Format Settings', {
+			dlValueType,
+			dlDisplayUnits,
+			dlDecimals,
+			level: drillLevel + 1,
+			formatMap: Array.from(seriesFormatMap.entries()).map(([name, format]) => ({ series: name, format }))
+		});
+	}
+
 	let labelVisibilityValues: any[] | null = null;
 	for (let i = 0; i < valuesCols.length; i++) {
 		const col = valuesCols[i];
@@ -166,6 +258,9 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 
 	const toNumber = (x: any) => x === null || x === undefined || x === "" ? 0 : typeof x === "number" ? x : Number(x);
 
+	// Map series names to measure names for format lookup
+	const seriesToMeasureMap = new Map<string, string>();
+
 	// Basic label formatter (will be updated after series are built with proper formatting)
 	const labelFormatterDrill = (params: any) => {
 		if (labelVisibilityMapDrill.size > 0) {
@@ -182,7 +277,12 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 		return v as any;
 	};
 
-	const buildSeries = (name: string, dataArr: number[], defaultColor: string, config: any) => {
+	const buildSeries = (name: string, dataArr: number[], defaultColor: string, config: any, measureName?: string) => {
+		// Register series to measure mapping for format lookup
+		if (measureName) {
+			seriesToMeasureMap.set(name, measureName);
+		}
+		
 		const chartType = config?.chartType || "bar";
 		const widthPercent = config?.widthPercent;
 		const valueAxis = config?.valueAxis;
@@ -287,7 +387,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 				const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
 				const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 				const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
-				seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
+				seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config, measureName));
 			} else {
 				for (const mv of group.values || []) {
 					const measureName = mv?.source?.displayName ?? "Series";
@@ -302,7 +402,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 					const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
 					const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 					const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
-					seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
+					seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config, measureName));
 				}
 			}
 		}
@@ -320,7 +420,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 			const sums = finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(src[i]); return s; });
 			const sumsHigh = Array.isArray(high) ? finalNextCatOrder.map((c2) => { let s = 0; for (const i of idxs) if (nextCat[i] === c2) s += toNumber(high[i]); return s; }) : undefined;
 			const useHighlights = Array.isArray(sumsHigh) && (sumsHigh as number[]).some(v => v !== null && v !== undefined && Number(v) !== 0);
-			seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config));
+			seriesOut.push(buildSeries(name, useHighlights ? (sumsHigh as number[]) : sums, color, config, name));
 		}
 	}
 	
@@ -352,12 +452,43 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 		// Format value using formatAxisValue with data label settings
 		const numericValue = typeof v === "number" ? v : Number(v);
 		if (!Number.isNaN(numericValue)) {
-			return formatAxisValue(numericValue, maxValueForLabels, {
+			// Get format for current series - try measure name first, then series name
+			const seriesName = params?.seriesName;
+			const measureName = seriesToMeasureMap.get(seriesName) || seriesName;
+			const sourceFormat = seriesFormatMap.get(measureName);
+			
+			// Debug log sample calls
+			if (visual.debugLogger && Math.random() < 0.05) { // Log 5% of labels
+				visual.debugLogger.log('Drill Label Format Call', { 
+					series: seriesName,
+					measure: measureName,
+					sourceFormat: sourceFormat,
+					value: numericValue,
+					dlValueType: dlValueType,
+					dlDisplayUnits: dlDisplayUnits,
+					dlDecimals: dlDecimals,
+					level: drillLevel + 1
+				});
+			}
+			
+			const formatted = formatAxisValue(numericValue, maxValueForLabels, {
 				valueType: dlValueType,
 				displayUnits: dlDisplayUnits,
 				decimals: dlDecimals,
-				currencyCode: 'USD'
+				currencyCode: 'USD',
+				sourceFormat: sourceFormat
 			});
+			
+			// Log result
+			if (visual.debugLogger && Math.random() < 0.05) {
+				visual.debugLogger.log('Drill Label Result', {
+					input: numericValue,
+					output: formatted,
+					sourceFormat: sourceFormat
+				});
+			}
+			
+			return formatted;
 		}
 		
 		return v as any;
@@ -445,13 +576,18 @@ export function renderDrillView(
 		const decimalsRaw: any = yAxisObj?.valueDecimals;
 		const valueDecimals = (typeof decimalsRaw === 'number') ? String(decimalsRaw) : (typeof decimalsRaw === 'string' ? decimalsRaw : 'auto');
 
+		// Get format from first series for axis labels
+		const valuesCols: any = visual.dataView?.categorical?.values || [];
+		const firstSeriesFormat = (valuesCols.length > 0 && valuesCols[0]?.source?.format) ? valuesCols[0].source.format : undefined;
+
 		const scale = computeYAxisScale(built.series || [], {
 			tolerance: Math.max(0, Math.min(1, tolRaw)),
 			userSplits: userSplitsRaw,
 			valueType,
 			displayUnits,
 			decimals: valueDecimals,
-			currencyCode: 'USD'
+			currencyCode: 'USD',
+			sourceFormat: firstSeriesFormat
 		});
 
 		const yAxisMin = scale.min;

@@ -23,6 +23,7 @@ export interface YAxisSettings {
   displayUnits: string;    // auto|none|thousands|millions|...
   decimals: string;        // auto|0..9
   currencyCode?: string;   // default USD
+  sourceFormat?: string;   // Power BI format string from source
 }
 
 export interface YAxisResult {
@@ -63,7 +64,8 @@ export function computeYAxisScale(series: any[], settings: YAxisSettings): YAxis
         valueType: settings.valueType,
         displayUnits: settings.displayUnits,
         decimals: settings.decimals,
-        currencyCode: settings.currencyCode || 'USD'
+        currencyCode: settings.currencyCode || 'USD',
+        sourceFormat: settings.sourceFormat
       })
     };
   }
@@ -117,7 +119,8 @@ export function computeYAxisScale(series: any[], settings: YAxisSettings): YAxis
     valueType: settings.valueType,
     displayUnits: settings.displayUnits,
     decimals: settings.decimals,
-    currencyCode: settings.currencyCode || 'USD'
+    currencyCode: settings.currencyCode || 'USD',
+    sourceFormat: settings.sourceFormat
   });
 
   return { min: yMin, max: yMax, splitNumber, interval, labelFormatter };

@@ -314,10 +314,29 @@ export class Visual implements powerbi.extensibility.IVisual {
     const dlDisplayUnits: string = (dl["displayUnits"] as any)?.value || dl["displayUnits"] || 'auto';
     const dlDecimals: string = (dl["decimals"] as any)?.value || dl["decimals"] || 'auto';
 
+    // Get series measures early for format mapping
+    const valuesCols: any = categorical.values || [];
+    const measures: any[] = (valuesCols as any[]) || [];
+    const seriesMeasures = measures.filter((mv: any) => {
+      const roles = mv?.source?.roles;
+      if (!roles) return false;
+      return roles.series1 || roles.series2 || roles.series3 || roles.series4 || roles.series5;
+    });
+
     // Build labelVisibility lookup map: aggregate by category
     const labelVisibilityMap = (labelVisibilityValues && Array.isArray(labelVisibilityValues))
       ? buildLabelVisibilityMapForCat1(cat1All as any[], labelVisibilityValues)
       : new Map<any, number>();
+
+    // Build format map by series name (get format from measure source)
+    const seriesFormatMap = new Map<string, string>();
+    seriesMeasures.forEach((mv: any) => {
+      const name = mv?.source?.displayName;
+      const format = mv?.source?.format;
+      if (name && format) {
+        seriesFormatMap.set(name, format);
+      }
+    });
 
     // Calculate max value across all series for label formatting
     let maxValueForLabels = 0;
@@ -350,6 +369,10 @@ export class Visual implements powerbi.extensibility.IVisual {
         }
       }
       
+      // Get format for current series
+      const seriesName = params?.seriesName;
+      const sourceFormat = seriesFormatMap.get(seriesName);
+      
       // Format value using formatAxisValue with data label settings
       const numericValue = typeof v === "number" ? v : Number(v);
       if (!Number.isNaN(numericValue)) {
@@ -357,7 +380,8 @@ export class Visual implements powerbi.extensibility.IVisual {
           valueType: dlValueType,
           displayUnits: dlDisplayUnits,
           decimals: dlDecimals,
-          currencyCode: 'USD'
+          currencyCode: 'USD',
+          sourceFormat: sourceFormat
         });
       }
       
@@ -383,16 +407,7 @@ export class Visual implements powerbi.extensibility.IVisual {
     legendNames = (this.parsed?.legendNames as any[]) || [];
 
     // Apply series configuration (type, visibility, display name)
-    const valuesCols: any = categorical.values || [];
-    
-    // Filter only series1-series5 measures, skip labelVisibility
-    const measures: any[] = (valuesCols as any[]) || [];
-    
-    const seriesMeasures = measures.filter((mv: any) => {
-      const roles = mv?.source?.roles;
-      if (!roles) return false;
-      return roles.series1 || roles.series2 || roles.series3 || roles.series4 || roles.series5;
-    });
+    // valuesCols and seriesMeasures already declared above
     
     // Remove duplicates by measure name (for Field Parameters)
     const seenNames = new Set<string>();
@@ -626,13 +641,17 @@ export class Visual implements powerbi.extensibility.IVisual {
   // Always ensure we have valid data for primary axis
   const primaryAxisData = primarySeries.length > 0 ? primarySeries : seriesWithHover;
   
+  // Get format from first series for axis labels
+  const firstSeriesFormat = seriesFormatMap.size > 0 ? Array.from(seriesFormatMap.values())[0] : undefined;
+  
   const yAxisScale = computeYAxisScale(primaryAxisData, {
     tolerance: yScaleAdj,
     userSplits: userSplitsRaw,
     valueType: valueTypeSetting,
     displayUnits: displayUnitsSetting,
     decimals: String(decimalsSetting),
-    currencyCode: 'USD'
+    currencyCode: 'USD',
+    sourceFormat: firstSeriesFormat
   });
   const yAxisMin = yAxisScale.min;
   const yAxisMax = yAxisScale.max;

@@ -595,19 +595,52 @@ export function renderDrillView(
 		const ySplitNumber = scale.splitNumber;
 		if (typeof scale.interval === 'number' && userSplitsRaw > 0) (visual as any)._fixedYAxisInterval = scale.interval;
 
+		// Read X-axis configuration
+		const xAxisObj: any = objects?.xAxis || {};
+		const showXAxisLine: boolean = xAxisObj["showAxisLine"] !== false;
+		const showXLabels: boolean = xAxisObj["showLabels"] !== false;
+		const xLabelColor: string = (xAxisObj["labelColor"] as any)?.solid?.color || xAxisObj["labelColor"] || "#666666";
+		const xLabelSize: number = typeof xAxisObj["labelSize"] === "number" ? xAxisObj["labelSize"] : 12;
+		const xRotateLabels: number = typeof xAxisObj["rotateLabels"] === "number" ? xAxisObj["rotateLabels"] : 0;
+		const xFontFamily: string = xAxisObj["fontFamily"] || "Segoe UI, sans-serif";
+		const xFontStyleRaw: string = xAxisObj["fontStyle"] || "regular";
+		const showXGridLines: boolean = xAxisObj["showGridLines"] === true;
+		
+		// Parse fontStyle for X-axis
+		let xFontStyle = "normal";
+		let xFontWeight = "normal";
+		if (xFontStyleRaw === "bold") xFontWeight = "bold";
+		else if (xFontStyleRaw === "italic") xFontStyle = "italic";
+		else if (xFontStyleRaw === "boldItalic") { xFontWeight = "bold"; xFontStyle = "italic"; }
+		
+		// Read Y-axis configuration
+		const showYLabels: boolean = yAxisObj["showLabels"] !== false;
+		const yLabelColor: string = (yAxisObj["labelColor"] as any)?.solid?.color || yAxisObj["labelColor"] || "#666666";
+		const yLabelSize: number = typeof yAxisObj["labelSize"] === "number" ? yAxisObj["labelSize"] : 12;
+		const yFontFamily: string = yAxisObj["fontFamily"] || "Segoe UI, sans-serif";
+		const yFontStyleRaw: string = yAxisObj["fontStyle"] || "regular";
+		const showYGridLines: boolean = yAxisObj["showGridLines"] !== false;
+		
+		// Parse fontStyle for Y-axis
+		let yFontStyle = "normal";
+		let yFontWeight = "normal";
+		if (yFontStyleRaw === "bold") yFontWeight = "bold";
+		else if (yFontStyleRaw === "italic") yFontStyle = "italic";
+		else if (yFontStyleRaw === "boldItalic") { yFontWeight = "bold"; yFontStyle = "italic"; }
+
 		// Check if we need dual axis (secondary axis)
 		const needsDualAxis = hasSecondaryAxisSeries(built.series || []);
 		let yAxisConfig: any;
 		
 		if (needsDualAxis) {
 			const axisConfig = {
-				show: true,
-				labelColor: '#666',
-				labelSize: 12,
-				fontFamily: 'Segoe UI, sans-serif',
-				fontStyle: 'normal',
-				fontWeight: 'normal',
-				showGridLines: true,
+				show: showYLabels,
+				labelColor: yLabelColor,
+				labelSize: yLabelSize,
+				fontFamily: yFontFamily,
+				fontStyle: yFontStyle,
+				fontWeight: yFontWeight,
+				showGridLines: showYGridLines,
 				...(typeof yAxisMin === 'number' ? { min: yAxisMin } : {}),
 				...(typeof yAxisMax === 'number' ? { max: yAxisMax } : {}),
 				splitNumber: ySplitNumber,
@@ -618,13 +651,13 @@ export function renderDrillView(
 			yAxisConfig = dualAxisResult.yAxis;
 		} else {
 			yAxisConfig = {
-				show: true,
-				labelColor: '#666',
-				labelSize: 12,
-				fontFamily: 'Segoe UI, sans-serif',
-				fontStyle: 'normal',
-				fontWeight: 'normal',
-				showGridLines: true,
+				show: showYLabels,
+				labelColor: yLabelColor,
+				labelSize: yLabelSize,
+				fontFamily: yFontFamily,
+				fontStyle: yFontStyle,
+				fontWeight: yFontWeight,
+				showGridLines: showYGridLines,
 				...(typeof yAxisMin === 'number' ? { min: yAxisMin } : {}),
 				...(typeof yAxisMax === 'number' ? { max: yAxisMax } : {}),
 				splitNumber: ySplitNumber,
@@ -651,7 +684,17 @@ export function renderDrillView(
 			fontSize: detailFontSize,
 				// icon shape handled by legend renderer if present; keep defaults here
 		},
-		xAxis: { showAxisLine: true, show: true, labelColor: '#666', labelSize: 12, rotate: 0, fontFamily: 'Segoe UI, sans-serif', fontStyle: 'normal', fontWeight: 'normal', showGridLines: false },
+		xAxis: { 
+			showAxisLine: showXAxisLine, 
+			show: showXLabels, 
+			labelColor: xLabelColor, 
+			labelSize: xLabelSize, 
+			rotate: xRotateLabels, 
+			fontFamily: xFontFamily, 
+			fontStyle: xFontStyle, 
+			fontWeight: xFontWeight, 
+			showGridLines: showXGridLines 
+		},
 				yAxis: yAxisConfig,
 		gridBottom: dGridBottom,
 		topMargin: ui.topMargin,

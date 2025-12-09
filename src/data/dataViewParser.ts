@@ -46,15 +46,6 @@ export class DataViewParser {
     // Check if there's sorting information in metadata
     const sortInfo = categorical.values?.[0]?.source?.sort;
 
-    // Apply category limit if enabled
-    let finalUniqueCat1 = uniqueCat1;
-    if (formatting.dataOptionsCard.limitCategories.value) {
-      const maxCat = formatting.dataOptionsCard.maxCategories.value;
-      if (maxCat > 0 && uniqueCat1.length > maxCat) {
-        finalUniqueCat1 = uniqueCat1.slice(0, maxCat);
-      }
-    }
-
     const valuesCols: any = categorical.values || [];
 
     const colorHelper = new ColorHelper((this.host as any).colorPalette, {
@@ -105,6 +96,9 @@ export class DataViewParser {
       return true;
     });
 
+    // First pass: aggregate data for ALL categories to enable proper sorting
+    let workingCategories = uniqueCat1;
+    
     for (let idx = 0; idx < uniqueSeriesMeasures.length; idx++) {
       const mv: any = uniqueSeriesMeasures[idx];
       const name = mv?.source?.displayName ?? `Series ${idx + 1}`;
@@ -121,7 +115,7 @@ export class DataViewParser {
       
       const src: any[] = mv?.values || [];
       const high: any[] | undefined = mv?.highlights as any[] | undefined;
-      const agg = finalUniqueCat1.map((c) => {
+      const agg = workingCategories.map((c) => {
         const idxs = idxsByCat1.get(c) || [];
         let s = 0; for (const i of idxs) s += toNumber(src[i]);
         return s;
@@ -129,13 +123,13 @@ export class DataViewParser {
       
       // Track aggregated values for the first series (used for sorting)
       if (idx === 0) {
-        finalUniqueCat1.forEach((cat, i) => {
+        workingCategories.forEach((cat, i) => {
           categoryAggregates.set(cat, agg[i]);
         });
       }
       
       const aggHigh = Array.isArray(high)
-        ? finalUniqueCat1.map((c) => {
+        ? workingCategories.map((c) => {
             const idxs = idxsByCat1.get(c) || [];
             let s = 0; for (const i of idxs) s += toNumber(high[i]);
             return s;
@@ -173,30 +167,62 @@ export class DataViewParser {
       });
     }
 
-    // Apply internal sorting if sort is detected
-    // SortDirection: 1 = ascending, 2 = descending
+    // FIRST: Apply category limit based on TOP values (always by highest values)
+    // This ensures we always keep the categories with the highest values, regardless of sort direction
+    let workingCategoriesLimited = workingCategories;
+    let categoryDataForLimit = workingCategories.map((cat, index) => ({
+      category: cat,
+      value: categoryAggregates.get(cat) || 0,
+      originalIndex: index
+    }));
+    
+    if (formatting.dataOptionsCard.limitCategories.value) {
+      const maxCat = formatting.dataOptionsCard.maxCategories.value;
+      if (maxCat > 0 && workingCategories.length > maxCat) {
+        // Sort by value DESCENDING to get the TOP N categories by value
+        categoryDataForLimit.sort((a, b) => b.value - a.value);
+        
+        // Take only the top N categories
+        const topCategories = categoryDataForLimit.slice(0, maxCat);
+        
+        // Get the original indices to filter series data
+        const topIndices = topCategories.map(item => item.originalIndex);
+        
+        // Filter categories
+        workingCategoriesLimited = topCategories.map(item => item.category);
+        
+        // Filter series data to match
+        series.forEach(s => {
+          const oldData = [...s.data];
+          s.data = topIndices.map(idx => oldData[idx]);
+        });
+        
+        // Update categoryDataForLimit to only include top categories with new indices
+        categoryDataForLimit = topCategories.map((item, newIndex) => ({
+          category: item.category,
+          value: item.value,
+          originalIndex: newIndex
+        }));
+      }
+    }
+    
+    // SECOND: Apply user's sort preference (ascending or descending) for display
+    let finalUniqueCat1 = workingCategoriesLimited;
     if (sortInfo === 1 || sortInfo === 2) {
       const isAscending = sortInfo === 1;
       
-      // Create array of {category, value, index} for sorting
-      const categoryData = finalUniqueCat1.map((cat, index) => ({
-        category: cat,
-        value: categoryAggregates.get(cat) || 0,
-        originalIndex: index
-      }));
-      
-      // Sort by value
-      categoryData.sort((a, b) => {
+      // Sort by value according to user preference
+      categoryDataForLimit.sort((a, b) => {
         return isAscending ? (a.value - b.value) : (b.value - a.value);
       });
       
       // Extract sorted categories
-      const sortedCategories = categoryData.map(item => item.category);
+      const sortedCategories = categoryDataForLimit.map(item => item.category);
       
       // Reorder all series data to match sorted categories
       series.forEach(s => {
         const oldData = [...s.data];
-        s.data = categoryData.map(item => oldData[item.originalIndex]);
+        s.data = categoryDataForLimit.map(item => oldData[item.originalIndex]);
       });
       
       // Update finalUniqueCat1 to sorted order

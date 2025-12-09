@@ -86,6 +86,10 @@ export class Visual implements powerbi.extensibility.IVisual {
   // Store last update options to force re-render on external selection changes
   private lastUpdateOptions: powerbi.extensibility.visual.VisualUpdateOptions | undefined;
 
+  // Animation state for multi-bar transitions
+  private prevValues: number[] = [];
+  private currentValues: number[] = [];
+
   // Legend helpers removed; now imported from rendering/legendRenderer
 
   // Restore to base (drill-up)
@@ -107,8 +111,6 @@ export class Visual implements powerbi.extensibility.IVisual {
   private ensureSelectionPropagation() {
     // Small delay to let Power BI process the selection
     setTimeout(() => {
-      console.log("Selection propagation complete - other visuals should now be filtered");
-      
       // Optional: Check current selection state
       this.logCurrentSelectionState();
     }, 50);
@@ -118,9 +120,8 @@ export class Visual implements powerbi.extensibility.IVisual {
   private logCurrentSelectionState() {
     try {
       const currentSelections = this.selectionManager.getSelectionIds();
-      console.log("Current selection IDs count:", (currentSelections as any)?.length || 0);
     } catch (error) {
-      console.log("Could not retrieve current selection state");
+      // Silent error handling
     }
   }
 
@@ -202,7 +203,6 @@ export class Visual implements powerbi.extensibility.IVisual {
           }
         }
         this.drillSelectionIds[String(subcategoryValue)] = idsForSubcategory;
-        console.log(`Created ${idsForSubcategory.length} drill selection IDs for subcategory: ${subcategoryValue}`);
       } catch (error) {
         console.warn("Failed to create drill selection IDs for subcategory:", subcategoryValue, error);
       }
@@ -230,12 +230,13 @@ export class Visual implements powerbi.extensibility.IVisual {
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
-    this.debugLogger.log(`🔄 UPDATE CALLED type=${options.type} editMode=${options.editMode}`);
+    this.debugLogger.log('🎯 Visual correcto - Iniciando update');
     const dataView = options.dataViews && options.dataViews[0];
     this.dataView = dataView;
     this.lastUpdateOptions = options; // Store for potential re-render on external selection changes
     this.parsed = this.parser.parse(dataView, this.seriesColors);
     this.formattingSettings = this.parsed.formatting as VisualFormattingSettingsModel;
+    
     if (!this.parsed.hasData) {
       this.chartInstance.clear();
       return;
@@ -805,7 +806,16 @@ export class Visual implements powerbi.extensibility.IVisual {
         }
       },
       xAxis: dualAxisResult.yAxis,
-      series: seriesWithHover,
+      series: seriesWithHover.map((s: any) => ({
+        ...s,
+        animation: true,
+        animationDuration: 600,
+        animationEasing: 'cubicOut',
+        animationDelay: (dataIndex: number) => dataIndex * 150,
+        animationDurationUpdate: 800,
+        animationEasingUpdate: 'elasticOut',
+        animationDelayUpdate: (dataIndex: number) => dataIndex * 150
+      })),
     };
 
 
@@ -820,43 +830,13 @@ export class Visual implements powerbi.extensibility.IVisual {
   series: seriesData
 };*/
 
-    // Delegate base rendering (non-drilled) to ChartBuilder for consistency
-    // CHANGED: Always use the new option object to support dual Y-axis
-    if (false && !this.isDrilled) {
-      const baseParams: BaseRenderParams = {
-        title: {
-          show: (drillHeaderShow && this.isDrilled && this.drillCategory && this.drillCategory !== "undefined"),
-          text: (drillHeaderShow && this.isDrilled && this.drillCategory && this.drillCategory !== "undefined") ? `Details for ${this.drillCategory}` : "",
-          top: this.isDrilled ? "2%" : "5%"
-        },
-  categories,
-  legendNames,
-        series: seriesWithHover as any,
-        legend: {
-          show: legendShow,
-          orient: isVertical ? "vertical" : "horizontal",
-          top: legendTop,
-          bottom: legendBottom,
-          left: legendLeft,
-          right: legendRight,
-          padding: Array.isArray(legendPadding) ? legendPadding as number[] : [paddingTop, paddingRight, paddingBottom, paddingLeft],
-          itemWidth: legendItemWidth,
-          itemHeight: legendItemHeight,
-          fontSize: legendFontSize,
-          ...(legendIcon ? { icon: legendIcon } : {})
-        },
-        xAxis: { showAxisLine: showXAxisLine, show: showXLabels, labelColor: xLabelColor, labelSize: xLabelSize, rotate: xRotateLabels, fontFamily: xFontFamily, fontStyle: xFontStyle, fontWeight: xFontWeight, showGridLines: showXGridLines },
-  yAxis: { show: showYLabels, labelColor: yLabelColor, labelSize: yLabelSize, fontFamily: yFontFamily, fontStyle: yFontStyle, fontWeight: yFontWeight, showGridLines: showYGridLines, ...(typeof yAxisMin === 'number' ? { min: yAxisMin } : {}), ...(typeof yAxisMax === 'number' ? { max: yAxisMax } : {}), splitNumber: ySplitNumber, ...(this as any)._fixedYAxisInterval ? { interval: (this as any)._fixedYAxisInterval } : {}, labelFormatter: axisLabelFormatter },
-        gridBottom,
-        topMargin
-      };
-      this.chartBuilder.renderBase(baseParams);
-    } else {
-      this.chartInstance.clear();
-      this.chartInstance.setOption(option, true);
-      this.chartInstance.resize();
-    }
-  this.currentCategories = Array.isArray(categories) ? [...categories] : [];
+    // Apply option with ECharts native CASCADE animation
+    this.chartInstance.clear();
+    this.chartInstance.setOption(option, true);
+    
+    this.chartInstance.resize();
+    
+    this.currentCategories = Array.isArray(categories) ? [...categories] : [];
 
     // Save base state for drill-up if not currently drilled
     if (!this.isDrilled) {
@@ -870,7 +850,6 @@ export class Visual implements powerbi.extensibility.IVisual {
     }
 
     // Bind hover handlers via external interaction module
-    this.debugLogger.log("📍 CALLING bindHoverHandlers from visual.ts update()");
     bindHoverHandlers(this);
 
     // Drill rendering extracted to drillHandler.renderDrillView
@@ -900,10 +879,8 @@ export class Visual implements powerbi.extensibility.IVisual {
           // Check if Ctrl key is pressed for multi-select
           const isCtrlPressed = (params.event?.event as any)?.ctrlKey || false;
           
-          console.log(`Selecting category: ${clickedCategoryLabel} with ${selectionIds.length} IDs`);
           this.selectionManager.select(selectionIds, isCtrlPressed).then(() => {
             // Category selected successfully - this should trigger cross-visual filtering
-            console.log("Selection applied, cross-filtering should be active");
             this.ensureSelectionPropagation();
           }).catch((error) => {
             console.error("Selection failed:", error);
@@ -931,10 +908,8 @@ export class Visual implements powerbi.extensibility.IVisual {
             // Check if Ctrl key is pressed for multi-select
             const isCtrlPressed = (params.event?.event as any)?.ctrlKey || false;
             
-            console.log(`Selecting subcategory: ${name} with ${selectionIds.length} IDs`);
             this.selectionManager.select(selectionIds, isCtrlPressed).then(() => {
               // Subcategory selected successfully - this should trigger cross-visual filtering
-              console.log("Drill selection applied, cross-filtering should be active");
               this.ensureSelectionPropagation();
             }).catch((error) => {
               console.error("Drill selection failed:", error);
@@ -1012,12 +987,10 @@ export class Visual implements powerbi.extensibility.IVisual {
     // Listen for selection changes from other visuals
     this.selectionManager.registerOnSelectCallback((selectionIds: ISelectionId[]) => {
       // This will be called when selections change from other visuals
-      console.log("External selection change detected:", selectionIds);
       
       // Force a re-render using last update options to reflect the cleared highlights
       // This ensures the visual refreshes even if Power BI doesn't automatically call update()
       if (this.lastUpdateOptions) {
-        console.log("Forcing visual refresh due to external selection change");
         this.update(this.lastUpdateOptions);
       }
     });

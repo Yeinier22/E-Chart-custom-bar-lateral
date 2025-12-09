@@ -1,7 +1,7 @@
 {
     "visual": {
         "name": "eChartsBarVisualLateral",
-        "displayName": "Bar Chart Drill Down Lateral",
+        "displayName": "Bar Chart Drill Down Lateral 1.1",
         "guid": "barChartLateral8B4D03889C6049ABB8DA61CBEDB1D29E",
         "visualClassName": "Visual",
         "version": "1.0.0.2",

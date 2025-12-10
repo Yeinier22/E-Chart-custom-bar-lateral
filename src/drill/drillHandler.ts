@@ -751,17 +751,12 @@ export function renderDrillView(
 			};
 		}
 
-		// ==== Solution A: Ajuste proporcional del max basado en ocupación relativa ====
-		// Calculate occupancy difference between base and drill to adjust max value
-		const maxBaseValue = visual.lastBaseMaxValue ?? null;
-		const maxBaseScale = visual.lastBaseScale ?? null;
+		// 🎯 NEW: Dynamic max adjustment to ensure (bar + label-distance + label-width) = 95% of grid
+		// This maintains consistent 5% visual margin regardless of value magnitude or category
+		const chartWidthPx = visual.chartContainer.clientWidth;
+		const dlDistance = typeof objects?.dataLabels?.distance === 'number' ? objects.dataLabels.distance : 5;
 		
-		let p_base = 0.80; // default if base hasn't been saved yet
-		if (maxBaseValue && maxBaseScale && maxBaseScale > 0) {
-			p_base = maxBaseValue / maxBaseScale;
-		}
-		
-		// Calculate drill occupancy
+		// Find maximum value in drill data
 		let maxDrillValue = 0;
 		for (const s of (built.series || [])) {
 			if (Array.isArray(s.data)) {
@@ -771,41 +766,74 @@ export function renderDrillView(
 				}
 			}
 		}
-		const originalDrillMax = yAxisMax; // Original max calculated by scale function
-		const p_drill = originalDrillMax > 0 ? maxDrillValue / originalDrillMax : 0;
 		
-		// Calculate adjustment factor to match base occupancy
-		let adjustedDrillMax = originalDrillMax;
-		if (p_drill > p_base && p_base > 0) {
-			// Adjust max so drill has same occupancy as base
-			const adjustmentFactor = p_drill / p_base;
-			adjustedDrillMax = originalDrillMax * adjustmentFactor;
+		// Format the maximum value label to measure its width
+		const formattedMaxLabel = scale.labelFormatter ? scale.labelFormatter(yAxisMax) : String(yAxisMax);
+		
+		// Measure label width using ECharts text measurement
+		const echarts = require('echarts');
+		const labelRect = (echarts as any).format.getTextRect(formattedMaxLabel, {
+			fontFamily: yFontFamily,
+			fontSize: yLabelSize,
+			fontStyle: yFontStyle,
+			fontWeight: yFontWeight
+		});
+		const labelWidthPx = labelRect.width;
+		
+		// Convert distances to percentages of chart width
+		const labelDistPct = dlDistance / chartWidthPx;
+		const labelWidthPct = labelWidthPx / chartWidthPx;
+		
+		// Target: (bar + label-distance + label-width) = 95% of grid width
+		const targetOccupancy = 0.95;
+		
+		// Calculate adjusted max: xAxisMax = maxValue / (targetOccupancy - labelDistPct - labelWidthPct)
+		const availableForBar = targetOccupancy - labelDistPct - labelWidthPct;
+		
+		let adjustedDrillMax = yAxisMax;
+		if (availableForBar > 0.1) { // Safety check: ensure at least 10% is available for the bar
+			adjustedDrillMax = Math.ceil(maxDrillValue / availableForBar); // Round up to avoid cutting off
 		}
 		
-		visual.debugLogger?.log('📏 SOLUTION A - Max Adjustment:', {
-			base: { maxValue: maxBaseValue, maxScale: maxBaseScale, occupancy: p_base.toFixed(3) },
-			drill: { 
-				maxValue: maxDrillValue, 
-				originalMax: originalDrillMax, 
-				adjustedMax: adjustedDrillMax,
-				originalOccupancy: p_drill.toFixed(3),
-				targetOccupancy: p_base.toFixed(3),
-				adjustmentFactor: (p_drill / p_base).toFixed(3)
-			}
+		// Also normalize splitNumber to match base view (avoid different column counts)
+		const baseSplitNumber = visual.lastBaseSplitNumber ?? ySplitNumber;
+		const drillInterval = (visual as any)._fixedYAxisInterval ?? scale.interval;
+		const baseInterval = visual.lastBaseInterval ?? drillInterval;
+		
+		visual.debugLogger?.log('🎯 DRILL - Dynamic Max Adjustment:', {
+			chartWidth: chartWidthPx,
+			maxValue: maxDrillValue,
+			formattedLabel: formattedMaxLabel,
+			labelWidthPx: labelWidthPx,
+			labelDistancePx: dlDistance,
+			labelDistPct: labelDistPct.toFixed(3),
+			labelWidthPct: labelWidthPct.toFixed(3),
+			availableForBar: availableForBar.toFixed(3),
+			originalMax: yAxisMax,
+			adjustedMax: adjustedDrillMax,
+			targetOccupancy: '95%',
+			baseSplitNumber: baseSplitNumber,
+			drillSplitNumber: ySplitNumber
 		});
 		
-		// Apply adjusted max to yAxis configuration
+		// Apply adjusted max AND normalized splitNumber/interval to yAxis configuration
 		if (Array.isArray(yAxisConfig)) {
 			// Dual axis case - apply to primary axis (index 0)
 			yAxisConfig = yAxisConfig.map((axis: any, idx: number) => ({
 				...axis,
-				...(idx === 0 ? { max: adjustedDrillMax } : {})
+				...(idx === 0 ? { 
+					max: adjustedDrillMax, 
+					splitNumber: baseSplitNumber,
+					interval: baseInterval 
+				} : {})
 			}));
 		} else {
 			// Single axis case
 			yAxisConfig = {
 				...yAxisConfig,
-				max: adjustedDrillMax
+				max: adjustedDrillMax,
+				splitNumber: baseSplitNumber,
+				interval: baseInterval
 			};
 		}
 

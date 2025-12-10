@@ -108,6 +108,15 @@ export class Visual implements powerbi.extensibility.IVisual {
   private prevValues: number[] = [];
   private currentValues: number[] = [];
 
+  // Track if base view has secondary axis (for drill padding consistency)
+  private baseHasSecondaryAxis: boolean = false;
+
+  // Track base view scale for drill adjustment (Solution A)
+  private lastBaseMaxValue: number | null = null;
+  private lastBaseScale: number | null = null;
+  private lastBaseSplitNumber: number | null = null;
+  private lastBaseInterval: number | null = null;
+
   // Legend helpers removed; now imported from rendering/legendRenderer
 
   // Restore to base (drill-up)
@@ -238,18 +247,17 @@ export class Visual implements powerbi.extensibility.IVisual {
     this.chartContainer.style.width = "100%";
     this.chartContainer.style.height = "100%";
     options.element.appendChild(this.chartContainer);
-    this.chartBuilder = new ChartBuilder(this.chartContainer);
+    this.debugLogger = new DebugLogger(options.element);
+    this.chartBuilder = new ChartBuilder(this.chartContainer, this.debugLogger);
     this.chartInstance = this.chartBuilder.getInstance();
     this.host = options.host;
     this.selectionManager = options.host.createSelectionManager();
     this.formattingSettingsService = new FormattingSettingsService();
-    this.debugLogger = new DebugLogger(options.element);
     this.parser = new DataViewParser(this.host, (ctor, dv) => this.formattingSettingsService.populateFormattingSettingsModel(ctor, dv), this.debugLogger);
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
-    this.debugLogger.log('🎯 Visual correcto - Iniciando update 22');
-    this.debugLogger.log('📊 Estado drill al inicio de update:', { isDrilled: this.isDrilled, drillCategory: this.drillCategory });
+    this.debugLogger.log('🎯 Visual correcto - Iniciando update 11');
     const dataView = options.dataViews && options.dataViews[0];
     this.dataView = dataView;
     this.lastUpdateOptions = options; // Store for potential re-render on external selection changes
@@ -677,14 +685,71 @@ export class Visual implements powerbi.extensibility.IVisual {
     currencyCode: 'USD',
     sourceFormat: firstSeriesFormat
   });
-  const yAxisMin = yAxisScale.min;
-  const yAxisMax = yAxisScale.max;
+  let yAxisMin = yAxisScale.min;
+  let yAxisMax = yAxisScale.max;
   const ySplitNumber = yAxisScale.splitNumber;
   const axisLabelFormatter = showYLabels ? yAxisScale.labelFormatter : undefined;
   if (typeof yAxisScale.interval === 'number' && userSplitsRaw > 0) {
     (this as any)._fixedYAxisInterval = yAxisScale.interval;
   } else {
     (this as any)._fixedYAxisInterval = undefined;
+  }
+
+  // 🎯 NEW: Adjust yAxisMax to ensure (bar + label-distance + label-width) = 95% of grid
+  // This maintains consistent 5% visual margin regardless of value magnitude or category
+  const chartWidthPx = this.chartContainer.clientWidth;
+  const labelDistancePx = dlDistance; // Distance between bar end and label start
+  
+  // Find maximum value in primary axis data
+  let maxValueInPrimaryData = 0;
+  for (const s of primaryAxisData) {
+    if (Array.isArray(s.data)) {
+      for (const val of s.data) {
+        const num = typeof val === 'number' ? Math.abs(val) : (typeof val?.value === 'number' ? Math.abs(val.value) : 0);
+        if (num > maxValueInPrimaryData) maxValueInPrimaryData = num;
+      }
+    }
+  }
+  
+  // Format the maximum value label to measure its width
+  const formattedMaxLabel = axisLabelFormatter ? axisLabelFormatter(yAxisMax) : String(yAxisMax);
+  
+  // Measure label width using ECharts text measurement
+  const labelRect = (echarts as any).format.getTextRect(formattedMaxLabel, {
+    fontFamily: yFontFamily,
+    fontSize: yLabelSize,
+    fontStyle: yFontStyle,
+    fontWeight: yFontWeight
+  });
+  const labelWidthPx = labelRect.width;
+  
+  // Convert distances to percentages of chart width
+  const labelDistPct = labelDistancePx / chartWidthPx;
+  const labelWidthPct = labelWidthPx / chartWidthPx;
+  
+  // Target: (bar + label-distance + label-width) = 95% of grid width
+  const targetOccupancy = 0.95;
+  
+  // Calculate adjusted max: xAxisMax = maxValue / (targetOccupancy - labelDistPct - labelWidthPct)
+  const availableForBar = targetOccupancy - labelDistPct - labelWidthPct;
+  
+  if (availableForBar > 0.1) { // Safety check: ensure at least 10% is available for the bar
+    const adjustedMax = maxValueInPrimaryData / availableForBar;
+    yAxisMax = Math.ceil(adjustedMax); // Round up to avoid cutting off
+    
+    this.debugLogger.log('🎯 DYNAMIC MAX ADJUSTMENT:', {
+      chartWidth: chartWidthPx,
+      maxValue: maxValueInPrimaryData,
+      formattedLabel: formattedMaxLabel,
+      labelWidthPx: labelWidthPx,
+      labelDistancePx: labelDistancePx,
+      labelDistPct: labelDistPct.toFixed(3),
+      labelWidthPct: labelWidthPct.toFixed(3),
+      availableForBar: availableForBar.toFixed(3),
+      originalMax: yAxisScale.max,
+      adjustedMax: yAxisMax,
+      targetOccupancy: '95%'
+    });
   }
 
   // Compute secondary axis scale if needed
@@ -728,6 +793,37 @@ export class Visual implements powerbi.extensibility.IVisual {
   };
 
   const dualAxisResult = createDualAxisConfig(primaryAxisConfig, secondaryAxisConfig, seriesWithHover);
+
+  // Store if base has secondary axis (needed for drill padding consistency)
+  this.baseHasSecondaryAxis = dualAxisResult.hasSecondaryAxis;
+
+  // Store base scale values for Solution A adjustment (only when NOT drilled)
+  // This preserves the original base view scale even when external filters change
+  if (!this.isDrilled) {
+    // We need to calculate the max value across all primary series
+    let maxValueInData = 0;
+    for (const s of primaryAxisData) {
+      if (Array.isArray(s.data)) {
+        for (const val of s.data) {
+          const num = typeof val === 'number' ? Math.abs(val) : (typeof val?.value === 'number' ? Math.abs(val.value) : 0);
+          if (num > maxValueInData) maxValueInData = num;
+        }
+      }
+    }
+    this.lastBaseMaxValue = maxValueInData;
+    this.lastBaseScale = yAxisMax;
+    this.lastBaseSplitNumber = ySplitNumber;
+    this.lastBaseInterval = (this as any)._fixedYAxisInterval ?? yAxisScale.interval;
+    
+    this.debugLogger.log('📊 BASE SCALE VALUES SAVED:', {
+      maxValueInData: maxValueInData,
+      yAxisMax: yAxisMax,
+      splitNumber: ySplitNumber,
+      interval: this.lastBaseInterval,
+      occupancy: (maxValueInData / yAxisMax).toFixed(3)
+    });
+  }
+  // If drilled, keep the original base values to maintain consistent scaling
 
   const legendSettings: any = (dataView.metadata?.objects as any)?.legend || {};
   const legendShow: boolean = legendSettings["show"] !== false;
@@ -807,6 +903,9 @@ export class Visual implements powerbi.extensibility.IVisual {
         data: legendNames
       },
       grid: (() => {
+        // Log del contenedor DOM ANTES de calcular grid
+        this.debugLogger.log('📦 BASE - chartContainer bounding rect:', this.chartContainer.getBoundingClientRect());
+        
         // Leer gridRightPadding directamente del dataView para evitar cache
         const userPaddingRaw = options.dataViews[0]?.metadata?.objects?.dataOptions?.['gridRightPadding'] ?? 
                                this.formattingSettings.dataOptionsCard.gridRightPadding.value;
@@ -814,14 +913,19 @@ export class Visual implements powerbi.extensibility.IVisual {
         const totalRight = dualAxisResult.hasSecondaryAxis ? 12 : (3 + userPadding);
         const rightValue = `${totalRight}%`;
         
-        this.debugLogger.log('🎨 Base grid config:', { 
+        this.debugLogger.log('📐 BASE VIEW - Padding calculado:', { 
           hasSecondaryAxis: dualAxisResult.hasSecondaryAxis,
-          userPaddingFromDataView: options.dataViews[0]?.metadata?.objects?.dataOptions?.['gridRightPadding'],
-          userPaddingFromSettings: this.formattingSettings.dataOptionsCard.gridRightPadding.value,
-          userPaddingFinal: userPadding,
-          totalRight,
-          finalRightValue: rightValue
+          userPadding: userPadding,
+          basePadding: 3,
+          totalRight: totalRight,
+          grid: {
+            left: '3%',
+            right: rightValue,
+            top: topMargin,
+            bottom: gridBottom
+          }
         });
+        
         return { 
           left: "3%", 
           right: rightValue, 
@@ -871,9 +975,25 @@ export class Visual implements powerbi.extensibility.IVisual {
   series: seriesData
 };*/
 
+    // Logs completos antes de aplicar option
+    this.debugLogger.log('📊 BASE SERIES (pre-setOption):', seriesWithHover);
+    this.debugLogger.log('⬜ BASE GRID BEFORE setOption:', option.grid);
+    this.debugLogger.log('🧭 BASE AXIS CONFIG:', { xAxis: option.xAxis, yAxis: option.yAxis });
+    this.debugLogger.log('🏷️ BASE LABEL SETTINGS:', seriesWithHover.map((s: any) => ({
+      name: s.name,
+      label: {
+        show: s.label?.show,
+        position: s.label?.position,
+        distance: s.label?.distance,
+        offset: s.label?.offset
+      }
+    })));
+    
     // Apply option with ECharts native CASCADE animation
     this.chartInstance.clear();
     this.chartInstance.setOption(option, true);
+    
+    this.debugLogger.log('⬛ BASE OPTION SENT TO ECHARTS:', option);
     
     this.chartInstance.resize();
     
@@ -881,7 +1001,6 @@ export class Visual implements powerbi.extensibility.IVisual {
 
     // Save base state for drill-up if not currently drilled
     if (!this.isDrilled) {
-      this.debugLogger.log('💾 Guardando base state (NO está en drill)');
       this.baseCategories = Array.isArray(categories) ? [...categories] : [];
       try {
         this.baseSeriesSnapshot = JSON.parse(JSON.stringify(seriesWithHover));
@@ -988,14 +1107,12 @@ export class Visual implements powerbi.extensibility.IVisual {
     });
 
     if (this.isDrilled && this.drillCategory) {
-  this.debugLogger.log('🔍 DETECTADO DRILL ACTIVO - Re-renderizando drill view:', { drillCategory: this.drillCategory, drillCategoryKey: this.drillCategoryKey });
   const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
   if (!renderDrillView(this, this.drillCategory, false, this.drillCategoryKey, uiParams)) {
         // If no drill data is available anymore, restore base view
         this.restoreBaseView();
       }
     } else {
-      this.debugLogger.log('📌 NO está en drill - Limpiando gráficos');
       this.hoverGraphic = [];
       if (this.selectedIndex !== null) {
         this.selectedIndex = null;

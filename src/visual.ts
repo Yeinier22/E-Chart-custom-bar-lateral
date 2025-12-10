@@ -76,6 +76,9 @@ export class Visual implements powerbi.extensibility.IVisual {
   private baseLegendNames: string[] = [];
   private drillCategory: string | null = null;
   private drillCategoryKey: any = null;
+  // Cached drill data to avoid rebuilding on format changes
+  private cachedDrillCategories: any[] = [];
+  private cachedDrillSeries: any[] = [];
   private hoverGraphic: any[] = [];
   private selectionGraphic: any[] = [];
   private selectedIndex: number | null = null;
@@ -230,7 +233,8 @@ export class Visual implements powerbi.extensibility.IVisual {
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
-    this.debugLogger.log('🎯 Visual correcto - Iniciando update');
+    this.debugLogger.log('🎯 Visual correcto - Iniciando update 66');
+    this.debugLogger.log('📊 Estado drill al inicio de update:', { isDrilled: this.isDrilled, drillCategory: this.drillCategory });
     const dataView = options.dataViews && options.dataViews[0];
     this.dataView = dataView;
     this.lastUpdateOptions = options; // Store for potential re-render on external selection changes
@@ -304,7 +308,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   const dlShowBlankAs: string = (typeof dl["showBlankAs"] === "string") ? dl["showBlankAs"] : "";
   const dlTreatZeroAsBlank: boolean = dl["treatZeroAsBlank"] === true;
     const dlColor: string = (dl["color"] as any)?.solid?.color || "#444";
-    const dlDistance: number = typeof dl["distance"] === "number" ? dl["distance"] : 5;
+    const dlDistance: number = typeof dl["distance"] === "number" ? Math.max(5, dl["distance"]) : 5;
     const dlFontFamily: string = (dl["fontFamily"] as string) || "Segoe UI";
     const dlFontSize: number = typeof dl["fontSize"] === "number" ? dl["fontSize"] : 12;
     const dlFontStyleSetting: string = (dl["fontStyle"] as string) || "normal"; // normal|bold|italic
@@ -787,7 +791,7 @@ export class Visual implements powerbi.extensibility.IVisual {
         ...(legendIcon ? { icon: legendIcon } : {}),
         data: legendNames
       },
-      grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "8%" : "4%", top: topMargin, bottom: gridBottom, containLabel: true },
+      grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "12%" : `${this.formattingSettings.dataOptionsCard.gridRightPadding.value}%`, top: topMargin, bottom: gridBottom, containLabel: true },
       yAxis: {
         type: "category",
         data: categories,
@@ -840,6 +844,7 @@ export class Visual implements powerbi.extensibility.IVisual {
 
     // Save base state for drill-up if not currently drilled
     if (!this.isDrilled) {
+      this.debugLogger.log('💾 Guardando base state (NO está en drill)');
       this.baseCategories = Array.isArray(categories) ? [...categories] : [];
       try {
         this.baseSeriesSnapshot = JSON.parse(JSON.stringify(seriesWithHover));
@@ -946,12 +951,14 @@ export class Visual implements powerbi.extensibility.IVisual {
     });
 
     if (this.isDrilled && this.drillCategory) {
+  this.debugLogger.log('🔍 DETECTADO DRILL ACTIVO - Re-renderizando drill view:', { drillCategory: this.drillCategory, drillCategoryKey: this.drillCategoryKey });
   const uiParams = { hoverDuration, hoverEasing, selColor, selBorderColor, selBorderWidth, selOpacity, expandX, expandY, drillHeaderShow, topMargin };
   if (!renderDrillView(this, this.drillCategory, false, this.drillCategoryKey, uiParams)) {
         // If no drill data is available anymore, restore base view
         this.restoreBaseView();
       }
     } else {
+      this.debugLogger.log('📌 NO está en drill - Limpiando gráficos');
       this.hoverGraphic = [];
       if (this.selectedIndex !== null) {
         this.selectedIndex = null;

@@ -1,7 +1,7 @@
 {
     "visual": {
         "name": "eChartsBarVisualLateral",
-        "displayName": "Bar Chart Drill Down Lateral 1.1",
+        "displayName": "Bar Chart Drill Down Lateral 1.2",
         "guid": "barChartLateral8B4D03889C6049ABB8DA61CBEDB1D29E",
         "visualClassName": "Visual",
         "version": "1.0.0.2",
@@ -17,7 +17,7 @@
     "assets": {
         "icon": "assets/icon.png"
     },
-    "externalJS": null,
+    "externalJS": [],
     "style": "style/visual.less",
     "capabilities": "capabilities.json",
     "dependencies": null,

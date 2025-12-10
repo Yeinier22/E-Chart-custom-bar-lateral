@@ -67,7 +67,20 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	const drillLevel = visual.drillLevel || 0;
 	const currentCat = categorical?.categories?.[drillLevel]?.values || [];
 	const nextCat = categorical?.categories?.[drillLevel + 1]?.values || [];
-	if (!nextCat || nextCat.length === 0) return { categories: [], series: [] };
+	
+	visual.debugLogger?.log('🔨 buildDrillForCategory:', { 
+		drillLevel, 
+		clickedCategoryLabel, 
+		categoryKey,
+		currentCatLength: currentCat.length,
+		nextCatLength: nextCat.length,
+		totalCategories: categorical?.categories?.length
+	});
+	
+	if (!nextCat || nextCat.length === 0) {
+		visual.debugLogger?.log('⚠️ No hay nextCat disponible en nivel', drillLevel + 1);
+		return { categories: [], series: [] };
+	}
 
 	const valuesCols: any = categorical?.values || [];
 	const groups = valuesCols?.grouped?.() as any[] | undefined;
@@ -196,7 +209,7 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 	const dlShowBlankAs: string = (typeof dl["showBlankAs"] === "string") ? dl["showBlankAs"] : "";
 	const dlTreatZeroAsBlank: boolean = dl["treatZeroAsBlank"] === true;
 	const dlPositionSetting: string = (dl["position"] as any)?.value || dl["position"] || "auto";
-	const dlDistance: number = typeof dl["distance"] === "number" ? dl["distance"] : 5;
+	const dlDistance: number = typeof dl["distance"] === "number" ? Math.max(5, dl["distance"]) : 5;
 	
 	// Map label position for horizontal bars
 	const mapLabelPosition = (pos: string): any => {
@@ -525,8 +538,87 @@ export function renderDrillView(
 	categoryKey: any | undefined,
 	ui: DrillViewUIParams
 ): boolean {
-	const built = buildDrillForCategory(visual, categoryLabel, categoryKey);
-	if (!built.categories || built.categories.length === 0) return false;
+	visual.debugLogger?.log('🎬 renderDrillView llamado:', { categoryLabel, categoryKey, resetSelection, isDrilled: visual.isDrilled, currentDrillCategory: visual.drillCategory });
+	
+	const isNewDrill = resetSelection;
+	let built: any;
+	
+	// For re-renders (resetSelection=false), use cached drill data if available
+	if (!isNewDrill && visual.cachedDrillCategories.length > 0 && visual.cachedDrillSeries.length > 0) {
+		visual.debugLogger?.log('✅ Usando datos de drill en caché para re-render');
+		built = {
+			categories: visual.cachedDrillCategories,
+			series: visual.cachedDrillSeries
+		};
+		
+		// Ensure drill state is maintained
+		visual.isDrilled = true;
+		visual.debugLogger?.log('🔄 Re-renderizando drill desde caché - Estado mantenido:', { 
+			drillLevel: visual.drillLevel, 
+			drillCategory: visual.drillCategory, 
+			isDrilled: visual.isDrilled,
+			cachedCategoriesCount: built.categories.length
+		});
+	} else {
+		visual.debugLogger?.log('🔨 Construyendo drill data:', { 
+			isNewDrill, 
+			cachedCategoriesLength: visual.cachedDrillCategories?.length || 0,
+			cachedSeriesLength: visual.cachedDrillSeries?.length || 0
+		});
+		
+		// Build drill data (for new drills or when cache is empty)
+		built = buildDrillForCategory(visual, categoryLabel, categoryKey);
+		if (!built.categories || built.categories.length === 0) {
+			visual.debugLogger?.log('❌ No hay datos de drill disponibles');
+			return false;
+		}
+		
+		// CRITICAL: Set drill state BEFORE rendering to prevent race conditions
+		if (isNewDrill) {
+			// New drill action - will increment level AFTER successful build
+			visual.isDrilled = true;
+			const newLevel = (visual.drillLevel || 0) + 1;
+			visual.drillPath = visual.drillPath || [];
+			visual.drillPath.push(categoryKey ?? categoryLabel);
+			visual.drillCategory = String(categoryLabel);
+			visual.drillCategoryKey = categoryKey ?? categoryLabel;
+			
+			visual.debugLogger?.log('🆕 Nueva acción de drill - Preparando nivel:', { 
+				newLevel, 
+				drillCategory: visual.drillCategory,
+				categoriesCount: built.categories.length
+			});
+			// Note: drillLevel will be incremented AFTER chart is rendered successfully
+		} else {
+			// Re-rendering: ensure drill state is maintained
+			visual.isDrilled = true;
+			// Keep existing drillCategory and drillCategoryKey if they exist
+			if (!visual.drillCategory) {
+				visual.drillCategory = String(categoryLabel);
+			}
+			if (!visual.drillCategoryKey) {
+				visual.drillCategoryKey = categoryKey ?? categoryLabel;
+			}
+			
+			visual.debugLogger?.log('🔄 Re-renderizando drill - Estado mantenido:', { 
+				drillLevel: visual.drillLevel, 
+				drillCategory: visual.drillCategory, 
+				isDrilled: visual.isDrilled,
+				categoriesCount: built.categories.length
+			});
+		}
+		
+		// Cache the drill data for future re-renders
+		visual.cachedDrillCategories = built.categories;
+		visual.cachedDrillSeries = built.series;
+		visual.debugLogger?.log('💾 Datos de drill cacheados:', { 
+			categoriesCount: built.categories.length, 
+			seriesCount: built.series.length,
+			cachedCategoriesLength: visual.cachedDrillCategories.length,
+			cachedSeriesLength: visual.cachedDrillSeries.length
+		});
+	}
+	
 
 	// Build selection IDs for drill level
 	buildDrillSelectionIds(visual, categoryLabel, categoryKey);
@@ -698,16 +790,39 @@ export function renderDrillView(
 				yAxis: yAxisConfig,
 		gridBottom: dGridBottom,
 		topMargin: ui.topMargin,
+		gridRightPadding: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value ?? 10,
 		animationDuration: 800,
 		animationEasing: 'cubicInOut'
 	};
+	
+	// Debug: verificar si el valor está en dataView.metadata.objects
+	const dataOptionsObj = visual.dataView?.metadata?.objects?.dataOptions as any;
+	const rawGridRightPadding = dataOptionsObj?.gridRightPadding;
+	
+	visual.debugLogger?.log('🔍 Verificando formattingSettings:', {
+		hasFormattingSettings: !!visual.formattingSettings,
+		hasDataOptionsCard: !!visual.formattingSettings?.dataOptionsCard,
+		hasGridRightPadding: !!visual.formattingSettings?.dataOptionsCard?.gridRightPadding,
+		gridRightPaddingValue: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value,
+		rawFromDataView: rawGridRightPadding,
+		finalValue: drillParams.gridRightPadding
+	});
+	
+	visual.debugLogger?.log('📐 Parámetros de drill render:', {
+		gridRightPadding: drillParams.gridRightPadding,
+		isNewDrill,
+		usingCache: !isNewDrill && visual.cachedDrillCategories.length > 0
+	});
+	
 	visual.chartBuilder.renderDrill(drillParams);
-	visual.isDrilled = true;
-	visual.drillLevel = (visual.drillLevel || 0) + 1; // Increment drill level
-	visual.drillPath = visual.drillPath || [];
-	visual.drillPath.push(categoryKey ?? categoryLabel ?? displayLabel); // Track drill path
-	visual.drillCategory = displayLabel;
-	visual.drillCategoryKey = categoryKey ?? categoryLabel ?? displayLabel;
+	
+	// NOW increment drill level if this was a new drill action
+	if (isNewDrill) {
+		visual.drillLevel = (visual.drillLevel || 0) + 1;
+		visual.debugLogger?.log('✅ Drill renderizado exitosamente - Nivel actualizado:', { drillLevel: visual.drillLevel });
+	}
+	
+	// Update current categories and selection state
 	visual.currentCategories = Array.isArray(built.categories) ? [...built.categories] : [];
 	visual.hoverGraphic = [];
 	if (resetSelection) {
@@ -728,6 +843,11 @@ export function renderDrillView(
 export function restoreBaseView(visual: any) {
 	if (!visual.chartInstance) return;
 	visual.selectionManager.clear();
+	
+	// Clear cached drill data when returning to base view
+	visual.cachedDrillCategories = [];
+	visual.cachedDrillSeries = [];
+	visual.debugLogger?.log('🗑️ Cache de drill limpiado al volver a base');
 	
 	console.log("=== RESTORE BASE VIEW ===");
 	console.log("baseCategories:", visual.baseCategories);

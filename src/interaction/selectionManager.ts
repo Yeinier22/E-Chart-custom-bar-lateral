@@ -9,9 +9,8 @@ export function ensureSelectionPropagation(visual: any) {
 export function logCurrentSelectionState(visual: any) {
   try {
     const currentSelections = visual.selectionManager.getSelectionIds();
-    console.log("Current selection IDs count:", (currentSelections as any)?.length || 0);
   } catch {
-    console.log("Could not retrieve current selection state");
+    // Could not retrieve current selection state
   }
 }
 

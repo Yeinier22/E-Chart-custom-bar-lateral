@@ -228,6 +228,10 @@
           "topMargin": {
             "displayName": "Top margin (px)",
             "type": { "numeric": true }
+          },
+          "gridRightPadding": {
+            "displayName": "Right padding (%)",
+            "type": { "numeric": true }
           }
         }
       },

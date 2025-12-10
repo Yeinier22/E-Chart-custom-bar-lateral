@@ -239,7 +239,6 @@ export function buildDrillForCategory(visual: any, clickedCategoryLabel: any, ca
 		const format = col?.source?.format;
 		if (name && format) {
 			seriesFormatMap.set(name, format);
-			console.log('[Drill] Format for series', name, ':', format);
 		}
 	}
 	
@@ -653,12 +652,6 @@ export function renderDrillView(
 	}));
 	const drillLegendNames = (built.series || []).map((s: any) => s.name);
 
-	console.log("Drill data:", { 
-		categories: built.categories, 
-		seriesCount: drillSeriesWithHover.length,
-		series: drillSeriesWithHover 
-	});
-
 	// Build Y-axis scale using shared helper
 		const yAxisObj: any = (visual.dataView?.metadata?.objects as any)?.yAxis || {};
 		const tolRaw = typeof yAxisObj?.scaleAdjustmentTolerance === 'number' ? yAxisObj.scaleAdjustmentTolerance : 0;
@@ -790,7 +783,19 @@ export function renderDrillView(
 				yAxis: yAxisConfig,
 		gridBottom: dGridBottom,
 		topMargin: ui.topMargin,
-		gridRightPadding: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value ?? 10,
+		gridRightPadding: (() => {
+			// Leer directamente desde dataView.metadata.objects para obtener el valor actualizado
+			const dataOptionsObj = visual.dataView?.metadata?.objects?.dataOptions as any;
+			const value = typeof dataOptionsObj?.gridRightPadding === 'number' 
+				? dataOptionsObj.gridRightPadding 
+				: (visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value ?? 10);
+			visual.debugLogger?.log('📏 Leyendo gridRightPadding para drill:', { 
+				fromDataView: dataOptionsObj?.gridRightPadding,
+				fromFormattingSettings: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value,
+				finalValue: value
+			});
+			return value;
+		})(),
 		animationDuration: 800,
 		animationEasing: 'cubicInOut'
 	};
@@ -849,12 +854,6 @@ export function restoreBaseView(visual: any) {
 	visual.cachedDrillSeries = [];
 	visual.debugLogger?.log('🗑️ Cache de drill limpiado al volver a base');
 	
-	console.log("=== RESTORE BASE VIEW ===");
-	console.log("baseCategories:", visual.baseCategories);
-	console.log("baseLegendNames:", visual.baseLegendNames);
-	console.log("baseSeriesSnapshot:", visual.baseSeriesSnapshot);
-	console.log("baseSeriesSnapshot length:", visual.baseSeriesSnapshot?.length);
-	
 	const objects: any = visual.dataView?.metadata?.objects || {};
 	const legendSettings: any = objects?.legend || {};
 	const legendShow: boolean = legendSettings["show"] !== false;
@@ -908,8 +907,6 @@ export function restoreBaseView(visual: any) {
 	
 	// Check if we have secondary axis series
 	const hasSecondaryAxis = visual.baseSeriesSnapshot?.some((s: any) => s.yAxisIndex === 1);
-	
-	console.log("hasSecondaryAxis:", hasSecondaryAxis);
 	
 	const baseParams: any = {
 		title: { show: false, text: '', top: '5%' },
@@ -970,8 +967,6 @@ export function restoreBaseView(visual: any) {
 		},
 		gridBottom
 	};
-	
-	console.log("baseParams to render:", baseParams);
 	
 	// Reset drill state - go back one level
 	visual.drillLevel = Math.max(0, (visual.drillLevel || 0) - 1); // Decrease drill level

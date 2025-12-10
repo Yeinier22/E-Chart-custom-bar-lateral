@@ -23,6 +23,21 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  *  THE SOFTWARE.
  */
+
+/*
+ * ⚠️ MUY IMPORTANTE - REGLA DE ORO ⚠️
+ * 
+ * NUNCA USAR console.log() EN ESTE PROYECTO
+ * 
+ * Power BI NO tiene consola F12 disponible. 
+ * Usar console.log() es completamente inútil y genera código basura.
+ * 
+ * ✅ SIEMPRE usar: this.debugLogger.log('mensaje', data)
+ * ❌ NUNCA usar: console.log('mensaje', data)
+ * 
+ * El debugLogger escribe en el DOM visible del visual para poder ver los logs.
+ */
+
 "use strict";
 
 import * as echarts from "echarts";
@@ -233,7 +248,7 @@ export class Visual implements powerbi.extensibility.IVisual {
   }
 
   public update(options: powerbi.extensibility.visual.VisualUpdateOptions) {
-    this.debugLogger.log('🎯 Visual correcto - Iniciando update 66');
+    this.debugLogger.log('🎯 Visual correcto - Iniciando update 22');
     this.debugLogger.log('📊 Estado drill al inicio de update:', { isDrilled: this.isDrilled, drillCategory: this.drillCategory });
     const dataView = options.dataViews && options.dataViews[0];
     this.dataView = dataView;
@@ -791,7 +806,29 @@ export class Visual implements powerbi.extensibility.IVisual {
         ...(legendIcon ? { icon: legendIcon } : {}),
         data: legendNames
       },
-      grid: { left: "3%", right: dualAxisResult.hasSecondaryAxis ? "12%" : `${this.formattingSettings.dataOptionsCard.gridRightPadding.value}%`, top: topMargin, bottom: gridBottom, containLabel: true },
+      grid: (() => {
+        // Leer gridRightPadding directamente del dataView para evitar cache
+        const userPaddingRaw = options.dataViews[0]?.metadata?.objects?.dataOptions?.['gridRightPadding'] ?? 
+                               this.formattingSettings.dataOptionsCard.gridRightPadding.value;
+        const userPadding = typeof userPaddingRaw === 'number' ? userPaddingRaw : 10;
+        const totalRight = dualAxisResult.hasSecondaryAxis ? 12 : (3 + userPadding);
+        const rightValue = `${totalRight}%`;
+        
+        this.debugLogger.log('🎨 Base grid config:', { 
+          hasSecondaryAxis: dualAxisResult.hasSecondaryAxis,
+          userPaddingFromDataView: options.dataViews[0]?.metadata?.objects?.dataOptions?.['gridRightPadding'],
+          userPaddingFromSettings: this.formattingSettings.dataOptionsCard.gridRightPadding.value,
+          userPaddingFinal: userPadding,
+          totalRight,
+          finalRightValue: rightValue
+        });
+        return { 
+          left: "3%", 
+          right: rightValue, 
+          top: topMargin, 
+          bottom: gridBottom
+        };
+      })(),
       yAxis: {
         type: "category",
         data: categories,

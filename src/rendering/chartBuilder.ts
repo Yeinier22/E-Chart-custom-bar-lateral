@@ -70,7 +70,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: `${input.gridRightPadding ?? 10}%`, top: input.topMargin || 10, bottom: input.gridBottom, containLabel: true },
+      grid: { left: '3%', right: `${3 + (input.gridRightPadding ?? 10)}%`, top: input.topMargin || 10, bottom: input.gridBottom },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
@@ -131,7 +131,6 @@ export class ChartBuilder {
   }
 
   public renderDrill(input: DrillRenderParams) {
-    console.log('🎨 renderDrill llamado con gridRightPadding:', input.gridRightPadding);
     const option: echarts.EChartsCoreOption = {
       tooltip: { trigger: 'axis' },
       title: input.title && input.title.show ? {
@@ -155,7 +154,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: `${input.gridRightPadding ?? 8}%`, top: input.topMargin || 10, bottom: input.gridBottom, containLabel: true },
+      grid: { left: '3%', right: `${3 + (input.gridRightPadding ?? 8)}%`, top: input.topMargin || 10, bottom: input.gridBottom },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),

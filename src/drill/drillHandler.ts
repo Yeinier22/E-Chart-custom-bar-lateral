@@ -751,6 +751,64 @@ export function renderDrillView(
 			};
 		}
 
+		// ==== Solution A: Ajuste proporcional del max basado en ocupación relativa ====
+		// Calculate occupancy difference between base and drill to adjust max value
+		const maxBaseValue = visual.lastBaseMaxValue ?? null;
+		const maxBaseScale = visual.lastBaseScale ?? null;
+		
+		let p_base = 0.80; // default if base hasn't been saved yet
+		if (maxBaseValue && maxBaseScale && maxBaseScale > 0) {
+			p_base = maxBaseValue / maxBaseScale;
+		}
+		
+		// Calculate drill occupancy
+		let maxDrillValue = 0;
+		for (const s of (built.series || [])) {
+			if (Array.isArray(s.data)) {
+				for (const val of s.data) {
+					const num = typeof val === 'number' ? Math.abs(val) : (typeof val?.value === 'number' ? Math.abs(val.value) : 0);
+					if (num > maxDrillValue) maxDrillValue = num;
+				}
+			}
+		}
+		const originalDrillMax = yAxisMax; // Original max calculated by scale function
+		const p_drill = originalDrillMax > 0 ? maxDrillValue / originalDrillMax : 0;
+		
+		// Calculate adjustment factor to match base occupancy
+		let adjustedDrillMax = originalDrillMax;
+		if (p_drill > p_base && p_base > 0) {
+			// Adjust max so drill has same occupancy as base
+			const adjustmentFactor = p_drill / p_base;
+			adjustedDrillMax = originalDrillMax * adjustmentFactor;
+		}
+		
+		visual.debugLogger?.log('📏 SOLUTION A - Max Adjustment:', {
+			base: { maxValue: maxBaseValue, maxScale: maxBaseScale, occupancy: p_base.toFixed(3) },
+			drill: { 
+				maxValue: maxDrillValue, 
+				originalMax: originalDrillMax, 
+				adjustedMax: adjustedDrillMax,
+				originalOccupancy: p_drill.toFixed(3),
+				targetOccupancy: p_base.toFixed(3),
+				adjustmentFactor: (p_drill / p_base).toFixed(3)
+			}
+		});
+		
+		// Apply adjusted max to yAxis configuration
+		if (Array.isArray(yAxisConfig)) {
+			// Dual axis case - apply to primary axis (index 0)
+			yAxisConfig = yAxisConfig.map((axis: any, idx: number) => ({
+				...axis,
+				...(idx === 0 ? { max: adjustedDrillMax } : {})
+			}));
+		} else {
+			// Single axis case
+			yAxisConfig = {
+				...yAxisConfig,
+				max: adjustedDrillMax
+			};
+		}
+
 			const drillParams: any = {
 		title: { show: ui.drillHeaderShow, text: ui.drillHeaderShow ? `Details for ${displayLabel}` : "", top: "2%" },
 		categories: built.categories,
@@ -784,47 +842,53 @@ export function renderDrillView(
 		gridBottom: dGridBottom,
 		topMargin: ui.topMargin,
 		gridRightPadding: (() => {
+			// Log del contenedor DOM ANTES de calcular grid en DRILL
+			visual.debugLogger?.log('📦 DRILL - chartContainer bounding rect:', visual.chartContainer.getBoundingClientRect());
 			// Leer directamente desde dataView.metadata.objects para obtener el valor actualizado
 			const dataOptionsObj = visual.dataView?.metadata?.objects?.dataOptions as any;
-			const value = typeof dataOptionsObj?.gridRightPadding === 'number' 
+			const userPadding = typeof dataOptionsObj?.gridRightPadding === 'number' 
 				? dataOptionsObj.gridRightPadding 
 				: (visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value ?? 10);
-			visual.debugLogger?.log('📏 Leyendo gridRightPadding para drill:', { 
-				fromDataView: dataOptionsObj?.gridRightPadding,
-				fromFormattingSettings: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value,
-				finalValue: value
+			
+			// MISMO cálculo que base view: NO agregar padding extra
+			const dualAxis = visual.baseHasSecondaryAxis ?? hasSecondaryAxisSeries(visual.cachedDrillSeries);
+			const totalRight = dualAxis ? 12 : (3 + userPadding);
+			
+			visual.debugLogger?.log('📐 DRILL VIEW - Padding calculado:', { 
+				hasSecondaryAxis: dualAxis,
+				userPadding: userPadding,
+				basePadding: 3,
+				totalRight: totalRight,
+				grid: {
+					left: '3%',
+					right: `${totalRight}%`,
+					top: ui.topMargin,
+					bottom: '3%'
+				}
 			});
-			return value;
+			return totalRight;
 		})(),
 		animationDuration: 800,
 		animationEasing: 'cubicInOut'
 	};
 	
-	// Debug: verificar si el valor está en dataView.metadata.objects
-	const dataOptionsObj = visual.dataView?.metadata?.objects?.dataOptions as any;
-	const rawGridRightPadding = dataOptionsObj?.gridRightPadding;
-	
-	visual.debugLogger?.log('🔍 Verificando formattingSettings:', {
-		hasFormattingSettings: !!visual.formattingSettings,
-		hasDataOptionsCard: !!visual.formattingSettings?.dataOptionsCard,
-		hasGridRightPadding: !!visual.formattingSettings?.dataOptionsCard?.gridRightPadding,
-		gridRightPaddingValue: visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value,
-		rawFromDataView: rawGridRightPadding,
-		finalValue: drillParams.gridRightPadding
-	});
-	
-	visual.debugLogger?.log('📐 Parámetros de drill render:', {
-		gridRightPadding: drillParams.gridRightPadding,
-		isNewDrill,
-		usingCache: !isNewDrill && visual.cachedDrillCategories.length > 0
-	});
+	// Logs completos antes de renderizar drill
+	visual.debugLogger?.log('📊 DRILL SERIES (pre-renderDrill):', drillParams.series);
+	visual.debugLogger?.log('🏷️ DRILL LABEL SETTINGS:', drillParams.series.map((s: any) => ({
+		name: s.name,
+		label: {
+			show: s.label?.show,
+			position: s.label?.position,
+			distance: s.label?.distance,
+			offset: s.label?.offset
+		}
+	})));
 	
 	visual.chartBuilder.renderDrill(drillParams);
 	
 	// NOW increment drill level if this was a new drill action
 	if (isNewDrill) {
 		visual.drillLevel = (visual.drillLevel || 0) + 1;
-		visual.debugLogger?.log('✅ Drill renderizado exitosamente - Nivel actualizado:', { drillLevel: visual.drillLevel });
 	}
 	
 	// Update current categories and selection state
@@ -908,11 +972,19 @@ export function restoreBaseView(visual: any) {
 	// Check if we have secondary axis series
 	const hasSecondaryAxis = visual.baseSeriesSnapshot?.some((s: any) => s.yAxisIndex === 1);
 	
+	// Calculate gridRightPadding with SAME logic as visual.ts base view
+	const dataOptionsObj: any = objects?.dataOptions || {};
+	const userPadding = typeof dataOptionsObj?.gridRightPadding === 'number' 
+		? dataOptionsObj.gridRightPadding 
+		: (visual.formattingSettings?.dataOptionsCard?.gridRightPadding?.value ?? 10);
+	const totalRight = hasSecondaryAxis ? 12 : (3 + userPadding);
+	
 	const baseParams: any = {
 		title: { show: false, text: '', top: '5%' },
 		categories: visual.baseCategories,
 		legendNames: visual.baseLegendNames,
 		series: visual.baseSeriesSnapshot,
+		gridRightPadding: totalRight,
 		legend: {
 			show: legendShow,
 			orient: isVertical ? 'vertical' : 'horizontal',

@@ -1,4 +1,5 @@
 import * as echarts from 'echarts';
+import { DebugLogger } from '../utils/debugLogger';
 
 export interface AxisText {
   show: boolean;
@@ -41,9 +42,13 @@ export interface DrillRenderParams extends BaseRenderParams {
 
 export class ChartBuilder {
   private chart: echarts.ECharts;
+  private debugLogger: DebugLogger | null = null;
 
-  constructor(private hostEl: HTMLElement) {
+  constructor(private hostEl: HTMLElement, debugLogger?: DebugLogger) {
     this.chart = echarts.init(hostEl as HTMLDivElement);
+    if (debugLogger) {
+      this.debugLogger = debugLogger;
+    }
   }
 
   public renderBase(input: BaseRenderParams) {
@@ -70,7 +75,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: `${3 + (input.gridRightPadding ?? 10)}%`, top: input.topMargin || 10, bottom: input.gridBottom },
+      grid: { left: '3%', right: `${input.gridRightPadding ?? 13}%`, top: input.topMargin || 10, bottom: input.gridBottom },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
@@ -125,6 +130,12 @@ export class ChartBuilder {
       },
       series: input.series
     };
+    
+    // Log the actual grid configuration being applied to ECharts
+    if (this.debugLogger) {
+      this.debugLogger.log('📊 BASE - ECharts option.grid REAL:', option.grid);
+    }
+    
     this.chart.clear();
     this.chart.setOption(option, true);
     this.chart.resize();
@@ -154,7 +165,7 @@ export class ChartBuilder {
         ...(input.legend.icon ? { icon: input.legend.icon } : {}),
         data: input.legendNames
       },
-      grid: { left: '3%', right: `${3 + (input.gridRightPadding ?? 8)}%`, top: input.topMargin || 10, bottom: input.gridBottom },
+      grid: { left: '3%', right: `${input.gridRightPadding ?? 13}%`, top: input.topMargin || 10, bottom: input.gridBottom },
       xAxis: Array.isArray(input.yAxis) ? input.yAxis.map((axis: any) => ({
         type: 'value',
         ...(typeof axis.min === 'number' ? { min: axis.min } : {}),
@@ -211,8 +222,19 @@ export class ChartBuilder {
       animationDurationUpdate: input.animationDuration ?? 800,
   animationEasingUpdate: (input.animationEasing as any) ?? 'cubicInOut'
     };
+    
+    // Log the actual grid configuration being applied to ECharts
+    if (this.debugLogger) {
+      this.debugLogger.log('⬜ DRILL GRID BEFORE setOption:', option.grid);
+      this.debugLogger.log('🧭 DRILL AXIS CONFIG:', { xAxis: option.xAxis, yAxis: option.yAxis });
+    }
+    
     this.chart.clear();
     this.chart.setOption(option, true);
+    
+    if (this.debugLogger) {
+      this.debugLogger.log('⬛ DRILL OPTION SENT TO ECHARTS:', option);
+    }
     this.chart.resize();
   }
 
